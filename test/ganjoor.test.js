@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { handle, isValidPath, shapeCat, shapePoem } from '../lib/ganjoor.js';
+import { handle, isValidPath, shapeCat, shapePoem, SHAPE_VERSION } from '../lib/ganjoor.js';
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url)));
 
@@ -90,7 +90,7 @@ test('a category path falls back from poem to cat and is cached once', async () 
   const second = await handle(req(), ctx);
   assert.equal((await second.json()).url, '/hafez/ghazal');
   assert.equal(fetchFn.calls.length, 2, 'second read must come from the cache');
-  assert.deepEqual([...cache.store.keys()], ['https://divan.test/api/page?url=%2Fhafez%2Fghazal']);
+  assert.deepEqual([...cache.store.keys()], [`https://divan.test/api/page?url=%2Fhafez%2Fghazal&shape=${SHAPE_VERSION}`]);
 });
 
 test('bad paths never reach Ganjoor', async () => {
@@ -212,5 +212,16 @@ test('the cache key keeps the parameter each endpoint uses', async () => {
   const pending = [];
   await handle(new Request('https://divan.test/api/sync?id=2840&x=1'), { cache, waitUntil: (p) => pending.push(p), fetchFn });
   await Promise.all(pending);
-  assert.deepEqual([...cache.store.keys()], ['https://divan.test/api/sync?id=2840']);
+  assert.deepEqual([...cache.store.keys()], [`https://divan.test/api/sync?id=2840&shape=${SHAPE_VERSION}`]);
+});
+
+test('cache keys carry the payload version, so a new shape never meets old entries', async () => {
+  const { SHAPE_VERSION } = await import('../lib/ganjoor.js');
+  assert.ok(Number.isInteger(SHAPE_VERSION) && SHAPE_VERSION >= 2);
+  const fetchFn = stubFetch({ [`${UP}/poets`]: [] });
+  const cache = memoryCache();
+  const pending = [];
+  await handle(new Request('https://divan.test/api/poets'), { cache, waitUntil: (p) => pending.push(p), fetchFn });
+  await Promise.all(pending);
+  assert.deepEqual([...cache.store.keys()], [`https://divan.test/api/poets?shape=${SHAPE_VERSION}`]);
 });
