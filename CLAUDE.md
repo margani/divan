@@ -117,3 +117,9 @@ Look at the screenshots, not just the exit code.
   don't await anything (like the sync fetch) before calling it.
 - 2026-10-30: media playback controls are not mirrored in RTL (play points
   right, progress runs left to right), per Material's bidirectionality rules.
+- 2026-10-30: v2 changed the poem payload, but the edge cache kept serving v1
+  payloads (no verse orders), so highlighting failed live while the pages.dev
+  preview (no Cache API there) looked fine. Bump `SHAPE_VERSION` in
+  `lib/ganjoor.js` (part of every cache key) and the SW `DATA` cache name on
+  any payload change, and rerun `scripts/player-check.mjs` against production
+  after deploying.
