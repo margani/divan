@@ -13,6 +13,7 @@ const pages = [
   ['tarjiband', '/hatef/divan-hatef/tarjeeband'],
   ['tarane', '/rahi/tarane/sh20'],
   ['missing', '/no-such-poet'],
+  ['about', '/about'],
 ];
 const viewports = [
   ['desktop', { width: 1280, height: 900 }],

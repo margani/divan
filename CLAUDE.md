@@ -31,7 +31,9 @@ nicer reader that credits and links Ganjoor on every poem page.
 - Keep it simple: plain HTML/CSS/JS (Vite with vanilla JS only if routing really
   needs it). No frameworks, no state libraries.
 - v1 scope: home (poet list), poet page (books and poems), poem page.
-  v2 (0.2.0): Ganjoor's audio recitations with verse highlighting. Not built:
+  v2 (0.2.0): Ganjoor's audio recitations with verse highlighting. 0.5.0: an
+  About page at `/about` (static, `js/about.js`; Ganjoor has no `/about`
+  path), linked from the header. Not built:
   accounts, comments, favourites sync, search. Ask the owner before anything
   outside the agreed scope.
 - Audio always streams straight from i.ganjoor.net with `preload="none"`;
@@ -98,7 +100,7 @@ lies with the reuser.
 
 ## Checks before merging
 
-`npm test`, then with `npm run dev` running: `npm run shots` (28 page/viewport/
+`npm test`, then with `npm run dev` running: `npm run shots` (32 page/viewport/
 theme checks, screenshots in `shots/`), `node scripts/offline-check.mjs` and
 `node scripts/player-check.mjs` (plays real Ganjoor audio),
 `node scripts/header-check.mjs`, `node scripts/finder-check.mjs` and
