@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { handle, isValidPath, shapeCat, shapePoem, SHAPE_VERSION } from '../lib/ganjoor.js';
+import { handle, isValidPath, shapeCat, shapePoem, shapeSongs, SHAPE_VERSION } from '../lib/ganjoor.js';
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url)));
 
@@ -232,4 +232,65 @@ test('poets carry the full name for search, and the payload version moved on', a
   assert.equal(p.name, 'مولانا');
   assert.equal(p.fullName, 'جلال الدین محمد مولوی');
   assert.equal(SHAPE_VERSION, 3);
+});
+
+test('songs: one row per singer, players only for Spotify and YouTube', async () => {
+  const fetchFn = stubFetch({ [`${UP}/poem/2130/songs?approved=true`]: fixture('songs-2130.json') });
+  const res = await handle(new Request('https://divan.test/api/songs?poem=2130'), { cache: null, waitUntil() {}, fetchFn });
+  assert.equal(res.status, 200);
+  const rows = await res.json();
+  assert.ok(rows.length > 10);
+  // Iraj Bastami is listed on BeepTunes and Spotify: one row, two links.
+  const bastami = rows.filter((r) => r.artist === 'ایرج بسطامی');
+  assert.equal(bastami.length, 1);
+  assert.deepEqual(bastami[0].links.map((l) => l.platform).sort(), ['beeptunes', 'spotify']);
+  assert.equal(
+    bastami[0].links.find((l) => l.platform === 'spotify').embed,
+    'https://open.spotify.com/embed/track/0pmLo97lqhhifohbQCw0bX',
+  );
+  assert.equal(bastami[0].links.find((l) => l.platform === 'beeptunes').embed, null);
+  // Playable rows come first.
+  const firstLinkOnly = rows.findIndex((r) => !r.links.some((l) => l.embed));
+  assert.ok(firstLinkOnly > 0 && rows.slice(firstLinkOnly).every((r) => !r.links.some((l) => l.embed)));
+  // Golha: singer read out of the description, link upgraded to https.
+  const golha = rows.find((r) => r.links[0].platform === 'golha');
+  assert.equal(golha.artist, 'عهدیه');
+  assert.equal(golha.links[0].url, 'https://www.golha.co.uk/fa/programme/1479');
+  assert.deepEqual([golha.from, golha.to], ['۲۶:۳۱', '۲۷:۱۲']);
+});
+
+test('songs: a Golha entry names its singer and song', () => {
+  const [row] = shapeSongs(fixture('songs-140965.json'));
+  assert.equal(row.artist, 'غلامحسین بنان');
+  assert.equal(row.title, 'کاروان');
+  assert.equal(row.album, 'گلهای رنگارنگ » شمارهٔ ۲۱۷');
+  assert.deepEqual([row.from, row.to], ['۱۱:۳۱', '۲۰:۱۴']);
+});
+
+test('songs: only real YouTube and Spotify ids are framed; broken links dropped', () => {
+  const t = (id, trackUrl, extra = {}) => ({ id, trackType: 4, artistName: `a${id}`, trackName: 't', albumName: '', trackUrl, ...extra });
+  const rows = shapeSongs([
+    t(1, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    t(2, 'https://youtu.be/dQw4w9WgXcQ'),
+    t(3, 'https://music.youtube.com/watch?v=dQw4w9WgXcQ&feature=share'),
+    t(4, 'https://www.youtube.com/watch?v=bad"><script>'),
+    t(5, 'https://open.spotify.com/album/0pmLo97lqhhifohbQCw0bX'),
+    t(6, 'javascript:alert(1)'),
+    t(7, 'https://open.spotify.com/track/0pmLo97lqhhifohbQCw0bX', { brokenLink: true }),
+    t(8, 'https://soundcloud.com/x/y'),
+  ]);
+  const by = Object.fromEntries(rows.map((r) => [r.artist, r.links[0]]));
+  for (const a of ['a1', 'a2', 'a3']) assert.equal(by[a].embed, 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', a);
+  assert.equal(by.a4.embed, null);
+  assert.equal(by.a5.embed, null);
+  assert.equal(by.a6, undefined);
+  assert.equal(by.a7, undefined);
+  assert.equal(by.a8.platform, 'soundcloud');
+});
+
+test('songs ids must be numbers', async () => {
+  const fetchFn = stubFetch({});
+  const res = await handle(new Request('https://divan.test/api/songs?poem=1;2'), { cache: null, waitUntil() {}, fetchFn });
+  assert.equal(res.status, 400);
+  assert.equal(fetchFn.calls.length, 0);
 });

@@ -850,3 +850,134 @@ dialog.letters::backdrop {
 body.has-player .update-bar {
   bottom: calc(6.5rem + env(safe-area-inset-bottom));
 }
+
+/* Songs made from the poem (js/songs.js) */
+
+.songs {
+  max-width: 46rem;
+  margin: 2.5rem auto 0;
+}
+.songs h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-top: 0;
+}
+.songs h2 .count {
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+.songs-note,
+.songs-suggest,
+.songs-empty {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 0 1rem;
+}
+.songs-suggest {
+  margin-top: 1rem;
+}
+.songs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.song {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.song.playing {
+  border-color: var(--accent);
+}
+.song-info {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+.song-artist {
+  font-weight: 700;
+}
+.song-title {
+  font-size: 0.95rem;
+}
+.song-album {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.song-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.song-play,
+.song-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.song-play {
+  border: 0;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+.song-play svg {
+  width: 1rem;
+  height: 1rem;
+}
+.song-link {
+  border: 1px solid var(--line);
+  color: var(--accent);
+}
+.song-link:hover,
+.song-play:hover {
+  filter: brightness(1.08);
+  background-color: var(--accent-soft);
+}
+.song-play:hover {
+  background-color: var(--accent);
+}
+
+.song-dock-inner {
+  max-width: var(--measure);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.song-frame {
+  flex: 1;
+  min-width: 0;
+  height: 80px;
+  border: 0;
+  border-radius: 12px;
+}
+.song-frame.video {
+  flex: 0 0 auto;
+  width: 192px;
+  height: 108px;
+  margin-inline-end: auto;
+}
+body.has-video {
+  padding-bottom: 9rem;
+}
+body.has-video .update-bar {
+  bottom: calc(9rem + env(safe-area-inset-bottom));
+}

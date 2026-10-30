@@ -55,6 +55,8 @@ export async function loadRecitations(poem, { head, article, isCurrent }) {
     icon('play'),
   );
   button.addEventListener('click', () => {
+    // Closes a song player (js/songs.js) so only one thing plays.
+    window.dispatchEvent(new Event('divan-recitation'));
     if (!active) openPlayer(poem, list, article);
     active.play();
   });
