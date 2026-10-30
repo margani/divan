@@ -1,0 +1,19 @@
+{
+  "name": "divan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A modern reading interface for Persian poetry, built on Ganjoor's public data",
+  "scripts": {
+    "dev": "wrangler pages dev --port 8788",
+    "test": "node --test test/",
+    "shots": "node scripts/screenshots.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1",
+    "wrangler": "^4.156.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261023.1": true
+  }
+}

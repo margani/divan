@@ -67,3 +67,31 @@ Ganjoor's FAQ (https://ganjoor.net/faq?id=21) says the data is free to download
 but Ganjoor has not checked its copyright status; classical works (Hafez,
 Saadi…) are safe, and copyright responsibility for edited/contemporary works
 lies with the reuser.
+
+## Architecture
+
+- `public/` is served as-is by Cloudflare Pages (no build step); Pages serves
+  `index.html` for unknown paths, so poem URLs mirror Ganjoor's paths.
+- `functions/api/[[path]].js` is the only server code: `/api/poets` and
+  `/api/page?url=/path` (poem or category), logic in `lib/ganjoor.js`.
+  Edge cache: a day fresh, a week stale-while-revalidate. The Cache API only
+  works on the custom domain, not on `*.pages.dev`.
+
+## Checks before merging
+
+`npm test`, then with `npm run dev` running: `npm run shots` (28 page/viewport/
+theme checks, screenshots in `shots/`) and `node scripts/offline-check.mjs`.
+Look at the screenshots, not just the exit code.
+
+## Lessons
+
+- 2026-10-30: `api.ganjoor.net/api/ganjoor/poem` returns an empty `verses`
+  list when `verseDetails=false`; it must be `true`. Wrangler's local cache
+  then kept the empty answer, so clear `.wrangler/state/v3/cache` after
+  proxy changes.
+- 2026-10-30: Pages answers `/index.html` with a 308 to `/`. Never precache
+  `/index.html` in the service worker: a cached redirect can't serve a
+  navigation, which broke offline reloads.
+- 2026-10-30: `Element.replaceChildren` and `append` stringify arrays. The
+  render helpers in `app.js` flatten first; a check for "[object" text in
+  `scripts/screenshots.mjs` guards it.

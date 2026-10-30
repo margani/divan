@@ -1,0 +1,406 @@
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-wght.woff2') format('woff2-variations'),
+    url('/fonts/Vazirmatn-wght.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --bg: #f7f3ec;
+  --surface: #fffdf8;
+  --text: #2b2620;
+  --muted: #6e6458;
+  --accent: #8b5a24;
+  --accent-soft: #f0e4d2;
+  --line: #e4dacb;
+  --shadow: 0 1px 2px rgb(60 40 10 / 0.06), 0 4px 16px rgb(60 40 10 / 0.05);
+
+  --font: 'Vazirmatn', system-ui, sans-serif;
+  --poem-size: clamp(1.15rem, 1rem + 0.55vw, 1.45rem);
+  --gutter: 16px;
+  --measure: 54rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17140f;
+    --surface: #1f1b15;
+    --text: #ece4d7;
+    --muted: #a99c8a;
+    --accent: #dcae6e;
+    --accent-soft: #2c251b;
+    --line: #322b21;
+    --shadow: none;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1.0625rem;
+  line-height: 1.9;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip {
+  position: absolute;
+  inset-inline-start: -999px;
+}
+.skip:focus {
+  inset-inline-start: var(--gutter);
+  top: 8px;
+  z-index: 10;
+  background: var(--surface);
+  padding: 0.25rem 0.75rem;
+}
+
+header.site,
+main,
+footer.site {
+  width: 100%;
+  max-width: calc(var(--measure) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+header.site {
+  padding-block: 1.25rem 0.5rem;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: 0;
+}
+
+main {
+  flex: 1;
+  padding-block: 1rem 3rem;
+  outline: none;
+}
+
+footer.site {
+  padding-block: 1.5rem 2.5rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+footer.site p {
+  margin: 0;
+}
+
+/* Shared page pieces */
+
+h1 {
+  font-weight: 800;
+  font-size: clamp(1.7rem, 1.3rem + 1.6vw, 2.5rem);
+  line-height: 1.5;
+  margin: 0.25rem 0 0.25rem;
+}
+
+h2 {
+  font-weight: 700;
+  font-size: 1.15rem;
+  margin: 2.25rem 0 0.75rem;
+  color: var(--muted);
+}
+
+.lede {
+  color: var(--muted);
+  margin: 0 0 1.5rem;
+}
+
+.crumbs {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.crumbs ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+.crumbs li + li::before {
+  content: '‹';
+  margin-inline-end: 0.5rem;
+  color: var(--line);
+}
+.crumbs a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.crumbs a:hover {
+  color: var(--accent);
+}
+
+.state {
+  padding: 3rem 0;
+  color: var(--muted);
+  text-align: center;
+}
+.state button {
+  font: inherit;
+  margin-top: 1rem;
+  padding: 0.4rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Home */
+
+.poets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
+}
+.poets a {
+  display: block;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+}
+.poets a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Poet and book pages */
+
+.bio {
+  max-width: 42rem;
+  color: var(--muted);
+}
+.bio summary {
+  cursor: pointer;
+  color: var(--accent);
+  margin-top: 0.25rem;
+}
+
+.books {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.6rem;
+}
+.books a {
+  display: block;
+  height: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+.books a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.poems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.poems li {
+  border-bottom: 1px solid var(--line);
+}
+.poems a {
+  display: block;
+  padding: 0.7rem 0.25rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.poems a:hover .poem-title {
+  color: var(--accent);
+}
+.poem-title {
+  font-weight: 700;
+  display: block;
+}
+.excerpt {
+  display: block;
+  color: var(--muted);
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Poem page */
+
+.poem-head {
+  margin-bottom: 2rem;
+}
+.poem-head .by {
+  margin: 0;
+  color: var(--muted);
+}
+.poem-head .by a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+.poem-head .by a:hover {
+  color: var(--accent);
+}
+
+.poem {
+  font-size: var(--poem-size);
+  line-height: 2.15;
+  max-width: 46rem;
+  margin-inline: auto;
+}
+
+.stanza + .stanza {
+  margin-top: 2.5rem;
+}
+.stanza-title {
+  display: block;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0;
+}
+.stanza-title::before,
+.stanza-title::after {
+  content: '';
+  display: inline-block;
+  vertical-align: middle;
+  width: 2.5rem;
+  height: 1px;
+  background: var(--line);
+  margin-inline: 0.75rem;
+}
+
+.couplet {
+  margin: 0;
+  padding-block: 0.15rem;
+}
+.couplet p,
+.band p,
+.free p {
+  margin: 0;
+}
+
+/* Phones: hemistichs stacked, the second one set off to the left the way
+   printed divans do it, so the couplet still reads as a pair. */
+.couplet .h2 {
+  text-align: end;
+}
+.couplet + .couplet {
+  margin-top: 0.6rem;
+}
+
+@media (min-width: 720px) {
+  .poem {
+    max-width: var(--measure);
+  }
+  /* One grid per stanza, so every couplet shares the same two columns, each
+     as wide as the stanza's longest hemistich: the printed-divan look.
+     Shorter hemistichs are stretched to that width. */
+  .stanza {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, max-content);
+    justify-content: center;
+    column-gap: 3.5rem;
+    row-gap: 0.2rem;
+  }
+  .stanza > :not(.couplet) {
+    grid-column: 1 / -1;
+  }
+  .couplet {
+    display: contents;
+  }
+  .couplet p {
+    text-align: justify;
+    text-align-last: justify;
+  }
+  .couplet + .couplet {
+    margin-top: 0;
+  }
+}
+
+.band {
+  text-align: center;
+  margin: 1.1rem 0 0;
+  padding: 0.6rem 0;
+  border-block: 1px solid var(--line);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.free p {
+  min-height: 1em;
+}
+
+.prose,
+.comment {
+  margin: 1rem 0;
+  text-align: justify;
+}
+.comment {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+.credit {
+  max-width: 46rem;
+  margin: 3rem auto 0;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  font-size: 0.95rem;
+}
+.credit p {
+  margin: 0;
+}
