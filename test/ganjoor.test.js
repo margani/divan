@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { handle, isValidPath, shapeCat, shapePoem, shapeSongs, SHAPE_VERSION } from '../lib/ganjoor.js';
+import { handle, isValidPath, shapeCat, shapePoem, shapeSongs, shapeSung, SHAPE_VERSION } from '../lib/ganjoor.js';
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url)));
 
@@ -293,4 +293,42 @@ test('songs ids must be numbers', async () => {
   const res = await handle(new Request('https://divan.test/api/songs?poem=1;2'), { cache: null, waitUntil() {}, fetchFn });
   assert.equal(res.status, 400);
   assert.equal(fetchFn.calls.length, 0);
+});
+
+test('sung: every poem in Ganjoor music index, once, from one cached request', async () => {
+  const fetchFn = stubFetch({ [`${UP}/page?url=%2Fmundex%2Fbypoet`]: fixture('mundex-bypoet.json') });
+  const cache = memoryCache();
+  const pending = [];
+  const ctx = { cache, waitUntil: (p) => pending.push(p), fetchFn };
+  const res = await handle(new Request('https://divan.test/api/sung?poem=1'), ctx);
+  await Promise.all(pending);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('cache-control'), /s-maxage=86400/);
+  const { poems } = await res.json();
+  assert.ok(poems.includes('/rahi/tarane/sh20'));
+  assert.ok(poems.includes('/hafez/ghazal/sh1'));
+  assert.equal(new Set(poems).size, poems.length, 'each poem once');
+  assert.ok(poems.every((p) => p.startsWith('/rahi/') || p.startsWith('/hafez/ghazal/')));
+  await handle(new Request('https://divan.test/api/sung'), ctx);
+  assert.equal(fetchFn.calls.length, 1, 'second read must come from the cache');
+  assert.deepEqual([...cache.store.keys()], [`https://divan.test/api/sung?shape=${SHAPE_VERSION}`]);
+});
+
+test('sung: only Ganjoor poem paths survive, and an empty index is an error', () => {
+  const li = (href) => `<li><p>\n<a href="${href}">x</a> در y</p></li>`;
+  const html = [li('/hafez/ghazal/sh1'), li('https://evil.example/x'), li('/a/../b'), li('javascript:alert(1)'), li('/hafez/ghazal/sh1')].join('\n');
+  assert.deepEqual(shapeSung({ htmlText: html }).poems, ['/hafez/ghazal/sh1']);
+  assert.throws(() => shapeSung({ htmlText: '<p>nothing</p>' }));
+  assert.throws(() => shapeSung(null));
+});
+
+test('sung: Ganjoor failing gives an uncached 502', async () => {
+  const cache = memoryCache();
+  const res = await handle(new Request('https://divan.test/api/sung'), {
+    cache,
+    waitUntil() {},
+    fetchFn: stubFetch({ [`${UP}/page?url=%2Fmundex%2Fbypoet`]: { htmlText: '<p>under maintenance</p>' } }),
+  });
+  assert.equal(res.status, 502);
+  assert.equal(cache.store.size, 0);
 });

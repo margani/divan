@@ -3,7 +3,7 @@
 // VERSION is the app version (test/version.test.js keeps it equal to
 // package.json): every release changes this file, which is how browsers
 // notice an update and the page can offer it (js/update.js).
-const VERSION = '0.6.0';
+const VERSION = '0.7.0';
 const SHELL = `divan-shell-${VERSION}`;
 // Versioned like lib/ganjoor.js SHAPE_VERSION, so a device never keeps
 // showing a payload shape the app no longer expects.
@@ -23,6 +23,7 @@ const SHELL_FILES = [
   '/js/home.js',
   '/js/about.js',
   '/js/songs.js',
+  '/js/sung.js',
   '/js/finder.js',
   '/js/update.js',
   '/js/theme-init.js',

@@ -7,6 +7,7 @@ import { setupHeader } from './header.js';
 import { homeView } from './home.js';
 import { aboutView } from './about.js';
 import { loadSongs, stopSong } from './songs.js';
+import { markSung } from './sung.js';
 import { watchUpdates } from './update.js';
 
 const app = document.getElementById('app');
@@ -82,6 +83,8 @@ function renderCat(cat) {
       ),
     ],
   );
+  const token = navToken;
+  markSung({ root: app, isCurrent: () => token === navToken });
 }
 
 // data-o is the verse order a recitation's timings point at.
