@@ -1,4 +1,4 @@
-// The header's two icon buttons: light/dark theme and installing the app.
+// The header's icon buttons: light/dark theme and installing the app.
 import { h } from './dom.js';
 
 const ICONS = {
@@ -54,13 +54,18 @@ const standalone = () =>
 const isIOS = () =>
   /iphone|ipad|ipod/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
-function showHint() {
+// Phones and tablets; a desktop browser that offers no prompt (Firefox,
+// Safari on a Mac) has no install route worth pointing at.
+const isTouch = () => matchMedia('(pointer: coarse)').matches;
+
+const HINTS = {
+  ios: 'برای نصب دیوان، در سافاری دکمهٔ هم‌رسانی را بزنید و «افزودن به صفحهٔ اصلی» را انتخاب کنید.',
+  menu: 'برای نصب دیوان، منوی مرورگر (سه نقطه) را باز کنید و «نصب برنامه» یا «افزودن به صفحهٔ اصلی» را بزنید.',
+};
+
+function showHint(text) {
   document.querySelector('.hint')?.remove();
-  const hint = h(
-    'div',
-    { class: 'hint', role: 'dialog', 'aria-label': 'نصب دیوان' },
-    h('p', {}, 'برای نصب دیوان، در سافاری دکمهٔ هم‌رسانی را بزنید و «افزودن به صفحهٔ اصلی» را انتخاب کنید.'),
-  );
+  const hint = h('div', { class: 'hint', role: 'dialog', 'aria-label': 'نصب دیوان' }, h('p', {}, text));
   document.body.append(hint);
   const close = (e) => {
     if (e.type === 'keydown' && e.key !== 'Escape') return;
@@ -78,7 +83,8 @@ function showHint() {
 function setupInstall(btn) {
   btn.append(icon('install'));
   if (standalone()) return;
-  let deferred = null;
+  // Caught early by theme-init.js when Chrome fired it before this ran.
+  let deferred = window.divanInstallPrompt || null;
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferred = e;
@@ -88,15 +94,18 @@ function setupInstall(btn) {
     deferred = null;
     btn.hidden = true;
   });
-  if (isIOS()) btn.hidden = false;
+  // Chrome on Android may not offer the prompt (dismissed before, or its own
+  // heuristics), but its menu can still install, so phones always get it.
+  btn.hidden = !(deferred || isIOS() || isTouch());
   btn.addEventListener('click', async () => {
     if (deferred) {
-      deferred.prompt();
-      const { outcome } = await deferred.userChoice;
+      const prompt = deferred;
+      deferred = window.divanInstallPrompt = null;
+      prompt.prompt();
+      const { outcome } = await prompt.userChoice;
       if (outcome === 'accepted') btn.hidden = true;
-      deferred = null;
-    } else if (isIOS()) {
-      showHint();
+    } else {
+      showHint(isIOS() ? HINTS.ios : HINTS.menu);
     }
   });
 }

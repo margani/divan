@@ -145,3 +145,8 @@ Look at the screenshots, not just the exit code.
   `cache: 'reload'`; `scripts/update-check.mjs` reproduces it. Playwright
   request interception disables the HTTP cache, so that check runs its own
   server.
+- 2026-10-30: the install button never showed on Android Chrome (#27):
+  `beforeinstallprompt` fires once and can come before the deferred app
+  modules run. `theme-init.js` (a classic head script) now catches it, and
+  touch devices get the button even without a prompt (a browser-menu hint).
+  `scripts/header-check.mjs` delays `app.js` to reproduce the race.
