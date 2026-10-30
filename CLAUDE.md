@@ -4,7 +4,7 @@ A modern, beautiful reading interface for Persian poetry, built on Ganjoor's
 public data (https://ganjoor.net). It is not a replacement for Ganjoor; it is a
 nicer reader that credits and links Ganjoor on every poem page.
 
-- Repo: https://github.com/margani/divan (private)
+- Repo: https://github.com/margani/divan (public since 2026-10-30)
 - Production: https://divan.whosane.dev — Cloudflare Pages project `divan`
   (also https://divan-5yt.pages.dev) on the "Hossein" account. Every merge to
   `main` deploys production through the Pages GitHub integration; PR branches
