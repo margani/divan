@@ -136,7 +136,11 @@ theme checks, screenshots in `shots/`), `node scripts/offline-check.mjs` and
 `node scripts/header-check.mjs`, `node scripts/finder-check.mjs`,
 `node scripts/songs-check.mjs`, `node scripts/sung-check.mjs` and
 `TMPDIR=<scratch> node scripts/update-check.mjs` (a returning reader gets new
-code despite a long browser cache). After a
+code despite a long browser cache). Before every release, also run
+`node scripts/upgrade-check.mjs <previous-release-url> <this-url>`: the
+previous release (a `git worktree` of the last release commit) under
+`wrangler pages dev` on another port; a reader who visited it returns to
+this code without tapping «به‌روزرسانی». After a
 deploy, run player-check against https://divan.whosane.dev too.
 Look at the screenshots, not just the exit code.
 
@@ -160,8 +164,9 @@ Look at the screenshots, not just the exit code.
 - 2026-10-30: v2 changed the poem payload, but the edge cache kept serving v1
   payloads (no verse orders), so highlighting failed live while the pages.dev
   preview (no Cache API there) looked fine. Bump `SHAPE_VERSION` in
-  `lib/ganjoor.js` (part of every cache key) and the SW `DATA` cache name on
-  any payload change, and rerun `scripts/player-check.mjs` against production
+  `lib/ganjoor.js` (part of every cache key), `API_SHAPE` in `js/api.js`
+  (part of every page request; a test keeps them equal) and the SW `DATA`
+  cache name on any payload change, and rerun `scripts/player-check.mjs` against production
   after deploying.
 - 2026-10-30: the `[object …]` bug came back in the home finder through a
   bare `replaceChildren([...])`. Always pass `...nodes([...])`; the finder
@@ -195,3 +200,11 @@ Look at the screenshots, not just the exit code.
   `SHAPE_VERSION` left wrangler's local cache serving the first draft, and
   the page threw on the missing field. Clear `.wrangler/state/v3/cache`
   (server stopped) after any payload change, even an unreleased one.
+- 2026-10-30: 0.8.0's song marks and filters vanished for returning readers
+  (#35). Their 0.7.0 service worker, still in control until «به‌روزرسانی»,
+  served the new code but answered `/api/sung` from its own cache with the
+  0.7.0 payload; the new code threw inside a catch and showed nothing.
+  Bumping `SHAPE_VERSION`/`DATA` only helps once the new worker runs. Every
+  `/api` request now goes through `api()` (`js/api.js`), which adds
+  `shape=N`, so an old worker's URL-keyed cache can't answer it.
+  `scripts/upgrade-check.mjs` reproduces it.

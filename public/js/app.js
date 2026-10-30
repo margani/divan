@@ -8,6 +8,7 @@ import { homeView } from './home.js';
 import { aboutView } from './about.js';
 import { loadSongs, stopSong } from './songs.js';
 import { markSung } from './sung.js';
+import { api } from './api.js';
 import { watchUpdates } from './update.js';
 
 const app = document.getElementById('app');
@@ -171,7 +172,7 @@ async function route() {
   }
   showState('در حال بارگذاری…');
   try {
-    const data = path === '/' ? await getJson('/api/poets') : await getJson(`/api/page?url=${encodeURIComponent(path)}`);
+    const data = path === '/' ? await getJson(api('/api/poets')) : await getJson(api(`/api/page?url=${encodeURIComponent(path)}`));
     // A slower earlier request must not paint over the page the reader moved to.
     if (token !== navToken) return;
     if (data.notFound) {

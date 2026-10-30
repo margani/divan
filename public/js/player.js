@@ -5,6 +5,7 @@
 import { h } from './dom.js';
 import { faDigits } from './format.js';
 import { currentVerse } from './layout.js';
+import { api } from './api.js';
 
 // Static, trusted markup only; never API data.
 const ICONS = {
@@ -39,7 +40,7 @@ export function stopPlayer() {
 export async function loadRecitations(poem, { head, article, isCurrent }) {
   let list;
   try {
-    const res = await fetch(`/api/recitations?poem=${poem.id}`);
+    const res = await fetch(api(`/api/recitations?poem=${poem.id}`));
     if (!res.ok) return;
     list = await res.json();
   } catch {
@@ -129,7 +130,7 @@ function openPlayer(poem, list, article) {
       });
     }
     if (!r.synced) return;
-    fetch(`/api/sync?id=${r.id}`)
+    fetch(api(`/api/sync?id=${r.id}`))
       .then((res) => (res.ok ? res.json() : []))
       // Ignore a late answer for a reciter the reader already left.
       .then((pairs) => {

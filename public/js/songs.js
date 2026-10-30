@@ -5,6 +5,7 @@
 import { h, nodes } from './dom.js';
 import { faDigits } from './format.js';
 import { stopPlayer } from './player.js';
+import { api } from './api.js';
 
 const PLATFORM_NAMES = {
   spotify: 'اسپاتیفای',
@@ -98,7 +99,7 @@ function songRow(row) {
 export async function loadSongs(poem, { section, isCurrent }) {
   let rows;
   try {
-    const res = await fetch(`/api/songs?poem=${poem.id}`);
+    const res = await fetch(api(`/api/songs?poem=${poem.id}`));
     if (!res.ok) return;
     rows = await res.json();
   } catch {
