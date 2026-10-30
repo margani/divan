@@ -39,7 +39,10 @@ nicer reader that credits and links Ganjoor on every poem page.
   allows only those two); Golha and the rest are links out. 0.7.0: a book's
   poem list marks the poems with songs and can be narrowed to them
   («فقط شعرهای ترانه‌شده», kept in the URL as `?songs`); a poet page counts
-  each book's sung poems (`js/sung.js`). Not built:
+  each book's sung poems (`js/sung.js`). 0.8.0: with that filter on, a
+  «خواننده» list narrows it to one singer (`?songs=<singer>`) and «قابل پخش»
+  to songs that play in the docked player (`&play`; same rule as the «پخش»
+  button). Not built:
   accounts, comments, favourites sync, search. Ask the owner before anything
   outside the agreed scope.
 - Audio always streams straight from i.ganjoor.net with `preload="none"`;
@@ -89,6 +92,12 @@ Two official sources, both with CORS open to browsers:
      ~2.3 MB, rebuilt by `GanjoorService-Mundex.cs`) lists every approved
      track as `<li><p><a href="/poem/path">…`; on 2026-10-28 that was 2,493
      poems from 102 poets. Never fetch `/songs` per poem for a list.
+     Each item reads `… در {artist}  » {album} » <a …>{track}</a>`; Golha
+     items say «گلها» and keep the singer in the track text. Names need
+     entity decoding, Arabic ي/ك folded and direction marks stripped
+     («‏ایرج» with an RLM was a second «ایرج»). ~680 singers.
+     Parsing takes ~15 ms of CPU once a day; fine on the account's Workers
+     Paid plan, but too much for the free plan's 10 ms.
 
 Verse `Position` values (enum `VersePosition` in GanjoorService):
 `Right`=0 first hemistich, `Left`=1 second hemistich, `CenteredVerse1`=2 and
@@ -109,8 +118,9 @@ lies with the reuser.
   `index.html` for unknown paths, so poem URLs mirror Ganjoor's paths.
 - `functions/api/[[path]].js` is the only server code: `/api/poets`,
   `/api/page?url=/path` (poem or category), `/api/recitations?poem=ID`
-  (normal recitations only), `/api/songs?poem=ID` (one row per singer), `/api/sung` (every poem path
-  in Ganjoor's music index; an empty parse is a 502, never cached),
+  (normal recitations only), `/api/songs?poem=ID` (one row per singer), `/api/sung` (`{singers, poems, playable}`, each
+  a `{path: [singer indexes]}` map, from Ganjoor's music index; an empty parse is a 502,
+  never cached),
   `/api/sync?id=ID` ([verseOrder, ms] pairs) and
   `/api/version`; logic in `lib/ganjoor.js`.
 - Recitation timings: `/api/audio/verses/{id}` is already corrected for old
@@ -181,3 +191,7 @@ Look at the screenshots, not just the exit code.
 - 2026-10-30: a Playwright `waitForResponse` set up after `goto` missed a
   response that had already arrived and sat out its 30 s timeout on every
   loop (`.catch` hid it). Create the wait before the navigation.
+- 2026-10-30: changing `/api/sung`'s shape twice inside one unreleased
+  `SHAPE_VERSION` left wrangler's local cache serving the first draft, and
+  the page threw on the missing field. Clear `.wrangler/state/v3/cache`
+  (server stopped) after any payload change, even an unreleased one.
