@@ -5,8 +5,15 @@ public data (https://ganjoor.net). It is not a replacement for Ganjoor; it is a
 nicer reader that credits and links Ganjoor on every poem page.
 
 - Repo: https://github.com/margani/divan (private)
-- Production (planned): https://divan.whosane.dev on Cloudflare Pages,
-  Cloudflare account "Hossein" (whosane.dev lives there).
+- Production: https://divan.whosane.dev — Cloudflare Pages project `divan`
+  (also https://divan-5yt.pages.dev) on the "Hossein" account. Every merge to
+  `main` deploys production through the Pages GitHub integration; PR branches
+  get preview deploys. No build step (`public/` is the output dir).
+- DNS: proxied CNAME `divan` → `divan-5yt.pages.dev` in the whosane.dev zone,
+  created with `cfapi --net`.
+- Verify a deploy: `curl https://divan.whosane.dev/api/version` must report the
+  merged commit; `x-divan-cache: hit` on a repeated `/api/page` read shows
+  the edge cache is sparing Ganjoor.
 
 ## Project rules
 
