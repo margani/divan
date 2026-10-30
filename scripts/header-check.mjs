@@ -81,12 +81,112 @@ try {
     expect((await page.locator('.hint').count()) === 0, 'iPhone: hint did not close');
     await ctx.close();
   }
+
+  // Chrome may fire beforeinstallprompt before the deferred app modules run
+  // (the Android report in #27). Hold app.js back and fire the event as soon
+  // as parsing ends: the button must still appear and prompt.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' });
+    const page = await ctx.newPage();
+    await page.route('**/js/app.js', async (route) => {
+      await new Promise((r) => setTimeout(r, 1500));
+      await route.continue();
+    });
+    await page.addInitScript(() => {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState !== 'interactive') return;
+        const e = new Event('beforeinstallprompt', { cancelable: true });
+        e.prompt = () => (window.__prompted = true);
+        e.userChoice = Promise.resolve({ outcome: 'dismissed' });
+        window.dispatchEvent(e);
+      });
+    });
+    await page.goto(base + '/');
+    await page.waitForSelector('.poets');
+    expect(await page.locator('#install-btn').isVisible(), 'early prompt: install button hidden');
+    if (await page.locator('#install-btn').isVisible()) {
+      await page.click('#install-btn');
+      expect((await page.evaluate(() => window.__prompted)) === true, 'early prompt: prompt not shown');
+    }
+    await ctx.close();
+  }
+
+  // An Android phone where Chrome offers no prompt still gets the button,
+  // which explains the browser-menu route.
+  {
+    const ctx = await browser.newContext({ ...devices['Pixel 7'], serviceWorkers: 'block' });
+    const page = await ctx.newPage();
+    await page.goto(base + '/');
+    await page.waitForSelector('.poets');
+    expect(await page.locator('#install-btn').isVisible(), 'Android: install button hidden without a prompt');
+    if (await page.locator('#install-btn').isVisible()) {
+      await page.click('#install-btn');
+      const text = (await page.locator('.hint').textContent().catch(() => '')) || '';
+      expect(text.includes('منوی مرورگر'), `Android: hint does not point at the browser menu: ${text}`);
+      expect(/^[\u0600-\u06FF]/.test(text.trim()), 'Android: hint does not start with a Persian letter');
+      await page.screenshot({ path: 'shots/header-android-hint.png' });
+    }
+    await ctx.close();
+  }
+
+  // The footer is one short line (#28): Ganjoor credit and version.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+    const page = await ctx.newPage();
+    await page.goto(base + '/hafez/ghazal/sh1');
+    await page.waitForSelector('.credit');
+    const foot = page.locator('footer.site');
+    const box = await foot.boundingBox();
+    expect(box.height < 90, `footer is ${Math.round(box.height)}px tall on a phone`);
+    expect((await foot.locator('a[href="https://ganjoor.net"]').count()) === 1, 'footer lost its Ganjoor link');
+    expect(/[۰-۹]\.[۰-۹]/.test(await page.textContent('#version')), 'footer has no version');
+    await foot.screenshot({ path: 'shots/footer-phone.png' });
+    await ctx.close();
+  }
+
+  // The About link sits with the header buttons and opens /about in-app,
+  // with the repo and a new-issue link, and works on a direct load too.
+  for (const [name, viewport] of [['phone', { width: 390, height: 844 }], ['desktop', { width: 1280, height: 800 }]]) {
+    const ctx = await browser.newContext({ viewport, serviceWorkers: 'block' });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(base + '/hafez');
+    await page.waitForSelector('.books');
+    const about = page.locator('header.site .tools a.about-link');
+    expect(await about.isVisible(), `${name}: no About link in the header`);
+    if (await about.count()) {
+      // On the same row as the theme button, not wrapped below it.
+      const a = await about.boundingBox();
+      const t = await page.locator('#theme-btn').boundingBox();
+      expect(Math.abs(a.y + a.height / 2 - (t.y + t.height / 2)) < 4, `${name}: About link not level with the theme button`);
+      await about.click();
+      await page.waitForSelector('.about h1');
+      expect(new URL(page.url()).pathname === '/about', `${name}: link did not go to /about`);
+      expect((await about.getAttribute('aria-current')) === 'page', `${name}: link not marked current on /about`);
+    }
+    const hrefs = await page.locator('.about a').evaluateAll((as) => as.map((x) => x.href));
+    expect(hrefs.includes('https://github.com/margani/divan'), `${name}: no repo link`);
+    expect(hrefs.includes('https://github.com/margani/divan/issues/new'), `${name}: no new-issue link`);
+    expect(hrefs.includes('https://ganjoor.net/'), `${name}: no Ganjoor link`);
+    const lines = await page.locator('.about h1, .about h2, .about p').allTextContents();
+    expect(lines.length > 5, `${name}: About page has only ${lines.length} blocks`);
+    const bad = lines.filter((l) => !/^[\u0600-\u06FF]/.test(l.trim()));
+    expect(bad.length === 0, `${name}: lines not starting with a Persian letter: ${bad.join(' | ')}`);
+    await page.screenshot({ path: `shots/about-${name}.png`, fullPage: true });
+    // Direct load (a shared link or a reload) renders the same page.
+    await page.reload();
+    await page.waitForSelector('.about h1');
+    expect((await page.title()).startsWith('درباره'), `${name}: wrong title ${await page.title()}`);
+    expect(errors.length === 0, `${name}: errors ${errors.join(' | ')}`);
+    await ctx.close();
+  }
 } catch (err) {
   problems.push(err.message);
 } finally {
   await browser.close();
 }
 console.log(`${checks} checks ran`);
-if (checks < 21) problems.push(`only ${checks}/21 checks ran`);
+if (checks < 51) problems.push(`only ${checks}/51 checks ran`);
 console.log(problems.length ? `FAIL\n${problems.join('\n')}` : 'PASS');
 process.exit(problems.length ? 1 : 0);

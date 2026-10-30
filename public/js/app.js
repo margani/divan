@@ -5,6 +5,7 @@ import { loadRecitations, stopPlayer } from './player.js';
 import { VERSION } from './version.js';
 import { setupHeader } from './header.js';
 import { homeView } from './home.js';
+import { aboutView } from './about.js';
 import { watchUpdates } from './update.js';
 
 const app = document.getElementById('app');
@@ -151,6 +152,15 @@ async function route() {
   // A recitation belongs to its poem; leaving the page ends it.
   stopPlayer();
   const path = decodeURIComponent(location.pathname).replace(/\/+$/, '') || '/';
+  const aboutLink = document.querySelector('.about-link');
+  if (path === '/about') aboutLink.setAttribute('aria-current', 'page');
+  else aboutLink.removeAttribute('aria-current');
+  // Not a Ganjoor path (Ganjoor has no /about), and static, so no fetch.
+  if (path === '/about') {
+    setTitle('درباره');
+    render(aboutView());
+    return;
+  }
   showState('در حال بارگذاری…');
   try {
     const data = path === '/' ? await getJson('/api/poets') : await getJson(`/api/page?url=${encodeURIComponent(path)}`);

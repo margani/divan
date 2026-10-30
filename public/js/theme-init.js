@@ -7,3 +7,11 @@ try {
 } catch {
   // Storage blocked (private mode): follow the OS.
 }
+
+// Chrome can fire beforeinstallprompt before the deferred app modules run,
+// and it fires only once: on Android the install button never appeared
+// (#27). Hold on to it here for js/header.js.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.divanInstallPrompt = e;
+});
