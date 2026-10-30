@@ -164,3 +164,53 @@ test('/api/version reports the deployed commit and is never cached', async () =>
   assert.equal(res.headers.get('cache-control'), 'no-store');
   assert.equal(cache.store.size, 0);
 });
+
+test('shapePoem keeps each verse order so recitation sync can find it', () => {
+  const poem = shapePoem(fixture('poem-tarjeeband.json'));
+  assert.deepEqual(poem.verses.slice(0, 3).map((v) => v.o), [1, 2, 3]);
+});
+
+test('recitations: only normal ones, trimmed, credited to the reciter', async () => {
+  const fetchFn = stubFetch({ [`${UP}/poem/2130/recitations`]: fixture('recitations-2130.json') });
+  const res = await handle(new Request('https://divan.test/api/recitations?poem=2130'), {
+    cache: null,
+    waitUntil() {},
+    fetchFn,
+  });
+  assert.equal(res.status, 200);
+  const list = await res.json();
+  assert.deepEqual(list.map((r) => r.id), [2840, 3879, 2935]);
+  assert.deepEqual(list[0], {
+    id: 2840,
+    artist: 'فریدون فرح‌اندوز',
+    artistUrl: 'https://t.me/fereidounfarahandouz',
+    mp3: 'https://i.ganjoor.net/a/2130-ff.mp3',
+    synced: true,
+  });
+});
+
+test('sync: [verse order, start ms] pairs from Ganjoor', async () => {
+  const fetchFn = stubFetch({ 'https://api.ganjoor.net/api/audio/verses/2840': fixture('sync-2840.json') });
+  const res = await handle(new Request('https://divan.test/api/sync?id=2840'), { cache: null, waitUntil() {}, fetchFn });
+  const pairs = await res.json();
+  assert.equal(pairs.length, 15);
+  assert.deepEqual(pairs.slice(0, 3), [[0, 0], [1, 0], [2, 7386]]);
+});
+
+test('recitation and sync ids must be numbers', async () => {
+  const fetchFn = stubFetch({});
+  for (const u of ['/api/recitations?poem=abc', '/api/sync?id=1/../2', '/api/sync']) {
+    const res = await handle(new Request('https://divan.test' + u), { cache: null, waitUntil() {}, fetchFn });
+    assert.equal(res.status, 400, u);
+  }
+  assert.equal(fetchFn.calls.length, 0);
+});
+
+test('the cache key keeps the parameter each endpoint uses', async () => {
+  const fetchFn = stubFetch({ 'https://api.ganjoor.net/api/audio/verses/2840': fixture('sync-2840.json') });
+  const cache = memoryCache();
+  const pending = [];
+  await handle(new Request('https://divan.test/api/sync?id=2840&x=1'), { cache, waitUntil: (p) => pending.push(p), fetchFn });
+  await Promise.all(pending);
+  assert.deepEqual([...cache.store.keys()], ['https://divan.test/api/sync?id=2840']);
+});

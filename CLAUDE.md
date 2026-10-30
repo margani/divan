@@ -30,9 +30,15 @@ nicer reader that credits and links Ganjoor on every poem page.
   font's licence file next to it.
 - Keep it simple: plain HTML/CSS/JS (Vite with vanilla JS only if routing really
   needs it). No frameworks, no state libraries.
-- v1 scope: home (poet list), poet page (books and poems), poem page. Not in v1:
-  accounts, comments, favourites sync, search, audio. Ask the owner before
-  anything outside the agreed scope.
+- v1 scope: home (poet list), poet page (books and poems), poem page.
+  v2 (0.2.0): Ganjoor's audio recitations with verse highlighting. Not built:
+  accounts, comments, favourites sync, search. Ask the owner before anything
+  outside the agreed scope.
+- Audio always streams straight from i.ganjoor.net with `preload="none"`;
+  never proxy or cache mp3s through Cloudflare (CDN terms on audio, and it
+  would multiply nothing for Ganjoor anyway).
+- The app version lives in `package.json` and `public/js/version.js`; a test
+  keeps them equal. Bump both together.
 
 ## Ganjoor data (researched 2026-10-30)
 
@@ -79,15 +85,20 @@ lies with the reuser.
 
 - `public/` is served as-is by Cloudflare Pages (no build step); Pages serves
   `index.html` for unknown paths, so poem URLs mirror Ganjoor's paths.
-- `functions/api/[[path]].js` is the only server code: `/api/poets` and
-  `/api/page?url=/path` (poem or category), logic in `lib/ganjoor.js`.
+- `functions/api/[[path]].js` is the only server code: `/api/poets`,
+  `/api/page?url=/path` (poem or category), `/api/recitations?poem=ID`
+  (normal recitations only), `/api/sync?id=ID` ([verseOrder, ms] pairs) and
+  `/api/version`; logic in `lib/ganjoor.js`.
+- Recitation timings: `/api/audio/verses/{id}` is already corrected for old
+  files (`OneSecondBugFix`) and keyed by `VOrder`; 0 is the title.
   Edge cache: a day fresh, a week stale-while-revalidate. The Cache API only
   works on the custom domain, not on `*.pages.dev`.
 
 ## Checks before merging
 
 `npm test`, then with `npm run dev` running: `npm run shots` (28 page/viewport/
-theme checks, screenshots in `shots/`) and `node scripts/offline-check.mjs`.
+theme checks, screenshots in `shots/`), `node scripts/offline-check.mjs` and
+`node scripts/player-check.mjs` (plays real Ganjoor audio).
 Look at the screenshots, not just the exit code.
 
 ## Lessons
@@ -102,3 +113,7 @@ Look at the screenshots, not just the exit code.
 - 2026-10-30: `Element.replaceChildren` and `append` stringify arrays. The
   render helpers in `app.js` flatten first; a check for "[object" text in
   `scripts/screenshots.mjs` guards it.
+- 2026-10-30: iOS only plays audio when `play()` runs inside the tap itself;
+  don't await anything (like the sync fetch) before calling it.
+- 2026-10-30: media playback controls are not mirrored in RTL (play points
+  right, progress runs left to right), per Material's bidirectionality rules.
