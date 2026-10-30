@@ -1,11 +1,11 @@
 // Offline reading: the app shell is precached, and every page the reader has
 // opened stays readable without a connection. Bump VERSION when shell files
 // change so old caches are dropped.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL = `divan-shell-${VERSION}`;
 // Versioned like lib/ganjoor.js SHAPE_VERSION, so a device never keeps
 // showing a payload shape the app no longer expects.
-const DATA = 'divan-data-v2';
+const DATA = 'divan-data-v3';
 const SHELL_FILES = [
   // Not /index.html: Pages answers it with a redirect to /, and a cached
   // redirect can't serve a navigation, which broke offline reloads.
@@ -18,6 +18,8 @@ const SHELL_FILES = [
   '/js/player.js',
   '/js/version.js',
   '/js/header.js',
+  '/js/home.js',
+  '/js/finder.js',
   '/js/theme-init.js',
   '/fonts/Vazirmatn-wght.woff2',
   '/manifest.webmanifest',

@@ -225,3 +225,11 @@ test('cache keys carry the payload version, so a new shape never meets old entri
   await Promise.all(pending);
   assert.deepEqual([...cache.store.keys()], [`https://divan.test/api/poets?shape=${SHAPE_VERSION}`]);
 });
+
+test('poets carry the full name for search, and the payload version moved on', async () => {
+  const { shapePoets } = await import('../lib/ganjoor.js');
+  const [p] = shapePoets([{ name: 'جلال الدین محمد مولوی', nickname: 'مولانا', fullUrl: '/moulavi', published: true }]);
+  assert.equal(p.name, 'مولانا');
+  assert.equal(p.fullName, 'جلال الدین محمد مولوی');
+  assert.equal(SHAPE_VERSION, 3);
+});

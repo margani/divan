@@ -98,7 +98,9 @@ lies with the reuser.
 
 `npm test`, then with `npm run dev` running: `npm run shots` (28 page/viewport/
 theme checks, screenshots in `shots/`), `node scripts/offline-check.mjs` and
-`node scripts/player-check.mjs` (plays real Ganjoor audio).
+`node scripts/player-check.mjs` (plays real Ganjoor audio),
+`node scripts/header-check.mjs` and `node scripts/finder-check.mjs`. After a
+deploy, run player-check against https://divan.whosane.dev too.
 Look at the screenshots, not just the exit code.
 
 ## Lessons
@@ -123,3 +125,9 @@ Look at the screenshots, not just the exit code.
   `lib/ganjoor.js` (part of every cache key) and the SW `DATA` cache name on
   any payload change, and rerun `scripts/player-check.mjs` against production
   after deploying.
+- 2026-10-30: the `[object …]` bug came back in the home finder through a
+  bare `replaceChildren([...])`. Always pass `...nodes([...])`; the finder
+  check would catch it.
+- 2026-10-30: `\u` escapes typed into a tool call reach the file as literal
+  characters (invisible ZWNJ, harakat). Write such regexes from char codes
+  and check with `grep -nP '[^\x00-\x7F]'`.

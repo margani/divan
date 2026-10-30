@@ -255,7 +255,12 @@ h2 {
   grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
   gap: 0.5rem;
 }
+.poets li {
+  display: flex;
+}
+/* Cards in a row share one height even when a long name wraps. */
 .poets a {
+  flex: 1;
   display: block;
   padding: 0.55rem 0.9rem;
   border-radius: 10px;
@@ -625,4 +630,135 @@ body.has-player {
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
+}
+
+/* Poet finder */
+
+.finder {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0 calc(-1 * var(--gutter)) 0.5rem;
+  padding: 0.6rem var(--gutter);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.search {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font: inherit;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+}
+.search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.finder-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.seg button,
+.letters-btn {
+  font: inherit;
+  font-size: 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+.letters-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+}
+.letters-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.found {
+  color: var(--muted);
+  margin: 1rem 0 0.75rem;
+}
+h2.letter {
+  font-size: 1.6rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+dialog.letters {
+  width: min(26rem, calc(100vw - 2 * var(--gutter)));
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+}
+dialog.letters::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+.letters-title {
+  margin: 0 0 0.8rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.letters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+  gap: 0.4rem;
+}
+.letters-grid button {
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.letters-grid button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.letters-grid button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.letters form {
+  margin: 0.9rem 0 0;
+  text-align: center;
+}
+.letters-close {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
 }
