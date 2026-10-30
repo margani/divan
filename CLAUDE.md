@@ -36,7 +36,10 @@ nicer reader that credits and links Ganjoor on every poem page.
   path), linked from the header. 0.6.0: songs made from the poem (Ganjoor's
   «ترانه‌ها»); Spotify and YouTube play in a docked bar, loaded only when the
   reader taps «پخش» (they set their own cookies; `frame-src` in `_headers`
-  allows only those two); Golha and the rest are links out. Not built:
+  allows only those two); Golha and the rest are links out. 0.7.0: a book's
+  poem list marks the poems with songs and can be narrowed to them
+  («فقط شعرهای ترانه‌شده», kept in the URL as `?songs`); a poet page counts
+  each book's sung poems (`js/sung.js`). Not built:
   accounts, comments, favourites sync, search. Ask the owner before anything
   outside the agreed scope.
 - Audio always streams straight from i.ganjoor.net with `preload="none"`;
@@ -81,6 +84,11 @@ Two official sources, both with CORS open to browsers:
      link Ganjoor's `MusicUrlValidator` accepts (YouTube, SoundCloud…).
      Readers suggest new songs on Ganjoor at `https://ganjoor.net/golha?p={poemId}`
      (needs a Ganjoor login); approved ones appear in Divan by themselves.
+   - Which poems have songs: no flag in category data. Ganjoor's music index
+     page `/mundex/bypoet` (`GET /api/ganjoor/page?url=/mundex/bypoet`,
+     ~2.3 MB, rebuilt by `GanjoorService-Mundex.cs`) lists every approved
+     track as `<li><p><a href="/poem/path">…`; on 2026-10-28 that was 2,493
+     poems from 102 poets. Never fetch `/songs` per poem for a list.
 
 Verse `Position` values (enum `VersePosition` in GanjoorService):
 `Right`=0 first hemistich, `Left`=1 second hemistich, `CenteredVerse1`=2 and
@@ -101,7 +109,8 @@ lies with the reuser.
   `index.html` for unknown paths, so poem URLs mirror Ganjoor's paths.
 - `functions/api/[[path]].js` is the only server code: `/api/poets`,
   `/api/page?url=/path` (poem or category), `/api/recitations?poem=ID`
-  (normal recitations only), `/api/songs?poem=ID` (one row per singer),
+  (normal recitations only), `/api/songs?poem=ID` (one row per singer), `/api/sung` (every poem path
+  in Ganjoor's music index; an empty parse is a 502, never cached),
   `/api/sync?id=ID` ([verseOrder, ms] pairs) and
   `/api/version`; logic in `lib/ganjoor.js`.
 - Recitation timings: `/api/audio/verses/{id}` is already corrected for old
@@ -115,7 +124,7 @@ lies with the reuser.
 theme checks, screenshots in `shots/`), `node scripts/offline-check.mjs` and
 `node scripts/player-check.mjs` (plays real Ganjoor audio),
 `node scripts/header-check.mjs`, `node scripts/finder-check.mjs`,
-`node scripts/songs-check.mjs` and
+`node scripts/songs-check.mjs`, `node scripts/sung-check.mjs` and
 `TMPDIR=<scratch> node scripts/update-check.mjs` (a returning reader gets new
 code despite a long browser cache). After a
 deploy, run player-check against https://divan.whosane.dev too.
@@ -169,3 +178,6 @@ Look at the screenshots, not just the exit code.
 - 2026-10-30: Spotify's embed plays only a 30-second preview unless the
   reader is signed in to Spotify in that browser (seen in songs-check's
   dock screenshot).
+- 2026-10-30: a Playwright `waitForResponse` set up after `goto` missed a
+  response that had already arrived and sat out its 30 s timeout on every
+  loop (`.catch` hid it). Create the wait before the navigation.
