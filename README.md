@@ -22,5 +22,8 @@ node scripts/offline-check.mjs   # PWA / offline check (needs npm run dev)
 
 ## Licences
 
-Poem texts come from Ganjoor. The Vazirmatn font is under the SIL Open Font
-License 1.1 (`public/fonts/Vazirmatn-OFL.txt`).
+- divan's own code: MIT, see `LICENSE`.
+- Poem texts are not covered by that licence: they come from
+  [Ganjoor](https://ganjoor.net), and their copyright status is as Ganjoor's
+  [FAQ](https://ganjoor.net/faq?id=21) describes.
+- Vazirmatn font: SIL Open Font License 1.1 (`public/fonts/Vazirmatn-OFL.txt`).
