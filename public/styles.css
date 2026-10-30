@@ -1055,7 +1055,8 @@ body.has-video .update-bar {
 .sung-tools .play-filter {
   margin-bottom: 0;
 }
-.singer-filter {
+.singer-filter,
+.platform-filter {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -1067,10 +1068,12 @@ body.has-video .update-bar {
   color: var(--muted);
 }
 .singer-filter[hidden],
+.platform-filter[hidden],
 .play-filter[hidden] {
   display: none;
 }
-.singer-select {
+.singer-select,
+.platform-select {
   min-width: 0;
   max-width: 16rem;
   padding: 0.35rem 0.6rem;

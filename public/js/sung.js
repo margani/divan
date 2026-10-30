@@ -4,6 +4,7 @@
 import { h } from './dom.js';
 import { faDigits } from './format.js';
 import { api } from './api.js';
+import { PLATFORM_NAMES } from './songs.js';
 
 const NOTE =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z" fill="currentColor"/></svg>';
@@ -18,16 +19,14 @@ function note() {
 let index = null;
 
 // One fetch per visit, shared by every page; a failure is forgotten so the
-// next page can try again. Each poem maps to its singers, and to those whose
-// song plays here (Spotify or YouTube in the docked player).
+// next page can try again. Each poem maps to its tracks: who sings it, on
+// which platform, and whether it plays here (in the docked player).
 function sungIndex() {
   index ??= fetch(api('/api/sung'))
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-    .then(({ singers, poems, playable = {} }) => {
-      const names = (ids) => ids.map((i) => singers[i]);
-      return new Map(
-        Object.entries(poems).map(([path, ids]) => [path, { singers: names(ids), playable: new Set(names(playable[path] || [])) }]),
-      );
+    .then(({ singers, platforms, poems }) => {
+      const track = ([s, p, play]) => ({ singer: singers[s] ?? null, platform: platforms[p], playable: play === 1 });
+      return new Map(Object.entries(poems).map(([path, list]) => [path, list.map(track)]));
     })
     .catch((err) => {
       console.error(err);
@@ -37,85 +36,112 @@ function sungIndex() {
   return index;
 }
 
-// The filter lives in the URL (`?songs`, `?songs=<singer>`, plus `&play`),
-// so going back from a poem (or reloading) returns to the same narrowed list.
+// The filter lives in the URL (`?songs`, `?songs=<singer>`, `&via=<platform>`,
+// `&play`), so going back from a poem (or reloading) keeps the narrowed list.
 const FILTER_PARAM = 'songs';
+const PLATFORM_PARAM = 'via';
 const PLAY_PARAM = 'play';
+// «شنیدن» labels a link on the poem page; as a list entry it means "others".
+const PLATFORMS = { ...PLATFORM_NAMES, other: 'سایر' };
 
-function markTitle(singers) {
+function markTitle(tracks) {
+  const singers = [...new Set(tracks.map((t) => t.singer).filter(Boolean))];
   if (singers.length === 0) return 'ترانه شده';
   const named = singers.slice(0, 3).join('، ');
   return `ترانه شده با صدای ${named}${singers.length > 3 ? ' و دیگران' : ''}`;
 }
 
-function singerFilter(rows, list) {
-  const counts = new Map();
-  for (const { singers } of rows) for (const name of singers) counts.set(name, (counts.get(name) || 0) + 1);
-  const state = { on: false, singer: '', playable: false };
-  const bySinger = (r) => !state.singer || r.singers.includes(state.singer);
-  const plays = (r) => (state.singer ? r.playable.has(state.singer) : r.playable.size > 0);
-
-  const button = h('button', { type: 'button', class: 'sung-filter', 'aria-pressed': 'false' }, note(), `فقط شعرهای ترانه‌شده (${faDigits(rows.length)})`);
+// A <select> of the values in this book, most poems first; null when there
+// is nothing to choose between.
+function picker(cls, labelCls, label, all, counts, name) {
+  if (counts.size < 2) return null;
   const select = h(
     'select',
-    { class: 'singer-select' },
-    h('option', { value: '' }, 'همهٔ خواننده‌ها'),
+    { class: cls },
+    h('option', { value: '' }, all),
     [...counts]
-      .sort(([a, n], [b, m]) => m - n || a.localeCompare(b, 'fa'))
-      .map(([name, n]) => h('option', { value: name, dir: 'auto' }, `${name} (${faDigits(n)})`)),
+      .sort(([a, n], [b, m]) => m - n || name(a).localeCompare(name(b), 'fa'))
+      .map(([value, n]) => h('option', { value, dir: 'auto' }, `${name(value)} (${faDigits(n)})`)),
   );
-  // With one singer (or none named) there is nothing to choose between.
-  const picker = counts.size > 1 ? h('label', { class: 'singer-filter', hidden: true }, 'خواننده:', select) : null;
+  return { select, label: h('label', { class: labelCls, hidden: true }, label, select) };
+}
+
+function poemCounts(rows, key) {
+  const counts = new Map();
+  for (const { tracks } of rows) {
+    for (const value of new Set(tracks.map((t) => t[key]).filter(Boolean))) counts.set(value, (counts.get(value) || 0) + 1);
+  }
+  return counts;
+}
+
+function singerFilter(rows, list) {
+  const state = { on: false, singer: '', platform: '', playable: false };
+  // One track must meet every choice: "Shajarian on Spotify" is one recording.
+  const matches = (r, playable = state.playable) =>
+    r.tracks.some(
+      (t) => (!state.singer || t.singer === state.singer) && (!state.platform || t.platform === state.platform) && (!playable || t.playable),
+    );
+
+  const button = h('button', { type: 'button', class: 'sung-filter', 'aria-pressed': 'false' }, note(), `فقط شعرهای ترانه‌شده (${faDigits(rows.length)})`);
+  const singers = picker('singer-select', 'singer-filter', 'خواننده:', 'همهٔ خواننده‌ها', poemCounts(rows, 'singer'), (v) => v);
+  const platforms = picker('platform-select', 'platform-filter', 'سرویس:', 'همهٔ سرویس‌ها', poemCounts(rows, 'platform'), (v) => PLATFORMS[v] || PLATFORMS.other);
   // Songs that play right here, in the docked player, rather than as links out.
-  const playButton = rows.some((r) => r.playable.size > 0)
+  const playButton = rows.some((r) => r.tracks.some((t) => t.playable))
     ? h('button', { type: 'button', class: 'play-filter', 'aria-pressed': 'false', hidden: true })
     : null;
 
-  // Banan's Golha songs, say, are links out: «قابل پخش» can leave nothing.
-  const none = h('p', { class: 'sung-none', hidden: true }, 'هیچ اجرای قابل پخشی با این انتخاب پیدا نشد.');
+  // Banan's Golha songs, say, aren't on Spotify: a combination can leave nothing.
+  const none = h('p', { class: 'sung-none', hidden: true }, 'هیچ شعری با این انتخاب پیدا نشد.');
   list.after(none);
 
   const apply = () => {
-    const shown = new Set(rows.filter((r) => bySinger(r) && (!state.playable || plays(r))).map((r) => r.li));
+    const shown = new Set(rows.filter((r) => matches(r)).map((r) => r.li));
     for (const li of list.children) li.hidden = state.on && !shown.has(li);
     none.hidden = !state.on || shown.size > 0;
     button.setAttribute('aria-pressed', String(state.on));
-    if (picker) picker.hidden = !state.on;
-    select.value = state.singer;
+    for (const [p, value] of [[singers, state.singer], [platforms, state.platform]]) {
+      if (!p) continue;
+      p.label.hidden = !state.on;
+      p.select.value = value;
+    }
     if (playButton) {
       playButton.hidden = !state.on;
       playButton.setAttribute('aria-pressed', String(state.playable));
-      playButton.replaceChildren(note(), `قابل پخش (${faDigits(rows.filter((r) => bySinger(r) && plays(r)).length)})`);
+      playButton.replaceChildren(note(), `قابل پخش (${faDigits(rows.filter((r) => matches(r, true)).length)})`);
     }
     const parts = state.on ? [state.singer ? `${FILTER_PARAM}=${encodeURIComponent(state.singer)}` : FILTER_PARAM] : [];
+    if (state.on && state.platform) parts.push(`${PLATFORM_PARAM}=${encodeURIComponent(state.platform)}`);
     if (state.on && state.playable) parts.push(PLAY_PARAM);
     history.replaceState(history.state, '', location.pathname + (parts.length ? `?${parts.join('&')}` : ''));
   };
   button.addEventListener('click', () => {
     state.on = !state.on;
-    if (!state.on) {
-      state.singer = '';
-      state.playable = false;
-    }
+    if (!state.on) Object.assign(state, { singer: '', platform: '', playable: false });
     apply();
   });
   playButton?.addEventListener('click', () => {
     state.playable = !state.playable;
     apply();
   });
-  select.addEventListener('change', () => {
-    state.singer = select.value;
+  singers?.select.addEventListener('change', () => {
+    state.singer = singers.select.value;
+    apply();
+  });
+  platforms?.select.addEventListener('change', () => {
+    state.platform = platforms.select.value;
     apply();
   });
 
   const params = new URLSearchParams(location.search);
   if (params.has(FILTER_PARAM)) {
     state.on = true;
-    if (counts.has(params.get(FILTER_PARAM))) state.singer = params.get(FILTER_PARAM);
+    const known = (p, value) => p && [...p.select.options].some((o) => o.value === value && value !== '');
+    if (known(singers, params.get(FILTER_PARAM))) state.singer = params.get(FILTER_PARAM);
+    if (known(platforms, params.get(PLATFORM_PARAM))) state.platform = params.get(PLATFORM_PARAM);
     state.playable = Boolean(playButton) && params.has(PLAY_PARAM);
   }
   apply();
-  return h('div', { class: 'sung-tools' }, button, picker, playButton);
+  return h('div', { class: 'sung-tools' }, button, singers?.label, platforms?.label, playButton);
 }
 
 // Called after a category renders. Songs are an extra: without the index the
@@ -136,14 +162,13 @@ export async function markSung({ root, isCurrent }) {
   if (!list) return;
   const rows = [];
   for (const a of list.querySelectorAll('a')) {
-    const entry = sung.get(a.getAttribute('href'));
-    if (!entry) continue;
-    const { singers, playable } = entry;
+    const tracks = sung.get(a.getAttribute('href'));
+    if (!tracks) continue;
     const li = a.parentElement;
     li.classList.add('sung');
-    const title = markTitle(singers);
+    const title = markTitle(tracks);
     a.querySelector('.poem-title').append(h('span', { class: 'sung-mark', title }, note(), h('span', { class: 'sr' }, title)));
-    rows.push({ li, singers, playable });
+    rows.push({ li, tracks });
   }
   if (rows.length === 0) return;
   list.before(singerFilter(rows, list));
