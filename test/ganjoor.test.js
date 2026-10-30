@@ -231,7 +231,7 @@ test('poets carry the full name for search, and the payload version moved on', a
   const [p] = shapePoets([{ name: 'جلال الدین محمد مولوی', nickname: 'مولانا', fullUrl: '/moulavi', published: true }]);
   assert.equal(p.name, 'مولانا');
   assert.equal(p.fullName, 'جلال الدین محمد مولوی');
-  assert.equal(SHAPE_VERSION, 5);
+  assert.equal(SHAPE_VERSION, 6);
 });
 
 test('songs: one row per singer, players only for Spotify and YouTube', async () => {
@@ -396,4 +396,19 @@ test('sung: each track says its platform and whether it plays in the page', () =
   assert.ok(hafez.some((t) => t.platform === 'spotify' && t.playable));
   assert.ok(real.platforms.includes('golha') && real.platforms.includes('beeptunes'));
   assert.ok(Object.values(real.poems).flat().every(([s, p, play]) => s >= -1 && s < real.singers.length && real.platforms[p] && (play === 0 || play === 1)));
+});
+
+test('sung: each poem has its title and each poet a name, for the songs page', () => {
+  const sung = shapeSung(fixture('mundex-bypoet.json'));
+  assert.equal(sung.titles['/rahi/tarane/sh20'], 'ترانه‌ها و نغمه‌ها » شمارهٔ ۲۰ - کاروان دشتی');
+  assert.equal(sung.titles['/hafez/ghazal/sh1'], 'غزلیات » غزل شمارهٔ ۱');
+  assert.equal(sung.poets['/hafez'], 'حافظ');
+  assert.equal(sung.poets['/rahi'], 'رهی معیری');
+  assert.deepEqual(Object.keys(sung.titles).sort(), Object.keys(sung.poems).sort());
+
+  const li = (href, title) => `<li><p>\n<a href="${href}">${title}</a> در الف  » al » <a href="https://x.example">t</a></p></li>`;
+  const odd = shapeSung({ htmlText: [li('/a/b/sh1', 'تنها عنوان'), li('/a/b/sh2', 'شاعر » کتاب &amp; دفتر » شعر &lt;۲&gt;')].join('\n') });
+  assert.equal(odd.titles['/a/b/sh1'], 'تنها عنوان');
+  assert.equal(odd.titles['/a/b/sh2'], 'کتاب & دفتر » شعر <۲>');
+  assert.equal(odd.poets['/a'], 'شاعر');
 });

@@ -7,7 +7,8 @@ import { setupHeader } from './header.js';
 import { homeView } from './home.js';
 import { aboutView } from './about.js';
 import { loadSongs, stopSong } from './songs.js';
-import { markSung } from './sung.js';
+import { markSung, songsView } from './sung.js';
+import { favoritesView, setupFavorites } from './favorites.js';
 import { api } from './api.js';
 import { watchUpdates } from './update.js';
 
@@ -151,6 +152,7 @@ function renderPoem(poem) {
   const token = navToken;
   loadRecitations(poem, { head, article, isCurrent: () => token === navToken });
   loadSongs(poem, { section: songs, isCurrent: () => token === navToken });
+  setupFavorites(poem, { head, article });
 }
 
 let navToken = 0;
@@ -161,13 +163,20 @@ async function route() {
   stopPlayer();
   stopSong();
   const path = decodeURIComponent(location.pathname).replace(/\/+$/, '') || '/';
-  const aboutLink = document.querySelector('.about-link');
-  if (path === '/about') aboutLink.setAttribute('aria-current', 'page');
-  else aboutLink.removeAttribute('aria-current');
-  // Not a Ganjoor path (Ganjoor has no /about), and static, so no fetch.
-  if (path === '/about') {
-    setTitle('درباره');
-    render(aboutView());
+  for (const a of document.querySelectorAll('.tools a')) {
+    if (a.getAttribute('href') === path) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  }
+  // Divan's own pages, not Ganjoor paths (no poet is called about, songs or
+  // favorites), so they skip the page fetch.
+  const own = {
+    '/about': ['درباره', () => aboutView()],
+    '/songs': ['ترانه‌ها', () => songsView({ isCurrent: () => token === navToken })],
+    '/favorites': ['علاقه‌مندی‌ها', () => favoritesView()],
+  }[path];
+  if (own) {
+    setTitle(own[0]);
+    render(own[1]());
     return;
   }
   showState('در حال بارگذاری…');
@@ -195,8 +204,9 @@ document.addEventListener('click', (e) => {
   const url = new URL(a.href);
   if (url.origin !== location.origin) return;
   e.preventDefault();
-  if (url.pathname === location.pathname) return;
-  history.pushState(null, '', url.pathname);
+  if (url.pathname + url.search === location.pathname + location.search) return;
+  // Keep the query: a poet page links to /songs?poet=/hafez.
+  history.pushState(null, '', url.pathname + url.search);
   window.scrollTo(0, 0);
   route().then(() => app.focus({ preventScroll: true }));
 });

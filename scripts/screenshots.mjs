@@ -14,6 +14,8 @@ const pages = [
   ['tarane', '/rahi/tarane/sh20'],
   ['missing', '/no-such-poet'],
   ['about', '/about'],
+  ['songs', '/songs'],
+  ['favorites', '/favorites'],
 ];
 const viewports = [
   ['desktop', { width: 1280, height: 900 }],

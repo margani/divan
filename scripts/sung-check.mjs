@@ -23,10 +23,11 @@ const visible = (page) => page.locator('.poems li:visible');
 const faCount = (text) => Number(text.match(/\(([۰-۹]+)\)$/)?.[1].replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 // Rows of this book with one track matching every given choice.
 const expected = (page, choice) =>
-  page.evaluate(async ({ singer, platform }) => {
+  page.evaluate(async ({ singer, platform, prefix = '/' }) => {
     const tracks = await window.sungTracks();
     const all = [...document.querySelectorAll('.poems li a')].map((a) => a.getAttribute('href'));
-    const ok = (path) => (tracks[path] || []).some((t) => (!singer || t.singer === singer) && (!platform || t.platform === platform));
+    const ok = (path) =>
+      path.startsWith(prefix) && (tracks[path] || []).some((t) => (!singer || t.singer === singer) && (!platform || t.platform === platform));
     const shown = [...document.querySelectorAll('.poems li:not([hidden]) a')].map((a) => a.getAttribute('href'));
     return { want: all.filter(ok).length, wrong: shown.filter((path) => !ok(path)) };
   }, choice);
@@ -208,6 +209,40 @@ try {
       expect(books <= 0, `${tag}: poet page scrolls sideways by ${books}px`);
       await page.locator('.books').screenshot({ path: `shots/sung-poet-${vp}-${scheme}.png` });
 
+      // Before any book: the poet page links to the songs page, which lists
+      // all of that poet's sung poems with the same filters.
+      await page.goto(base + '/hafez');
+      const hafezLink = page.locator('.songs-link');
+      await hafezLink.waitFor();
+      const hafezAll = await page.evaluate(async () => Object.keys(await window.sungTracks()).filter((p) => p.startsWith('/hafez/')).length);
+      expect(faCount(await hafezLink.textContent()) === hafezAll && (await hafezLink.textContent()).includes('حافظ'), `${tag}: poet link «${await hafezLink.textContent()}», index ${hafezAll}`);
+      await hafezLink.click();
+      await page.locator('.poet-select').waitFor();
+      expect(new URL(page.url()).pathname === '/songs' && (await page.locator('.poet-select').inputValue()) === '/hafez', `${tag}: songs page not narrowed to Hafez (${page.url()})`);
+      const summary = await page.locator('.songs-summary').textContent();
+      const shownFirst = await visible(page).count();
+      expect(persian(summary) && summary.endsWith(hafezAll.toLocaleString('fa-IR')) && shownFirst === Math.min(200, hafezAll), `${tag}: «${summary}», ${shownFirst} rows shown`);
+      expect(((await visible(page).first().locator('a').getAttribute('href')) || '').startsWith('/hafez/ghazal/'), `${tag}: Hafez's songs don't start with his ghazals`);
+      const moreBtn = page.locator('.more-btn');
+      expect(persian(await moreBtn.textContent()) && (await moreBtn.isVisible()), `${tag}: no «نمایش بیشتر» for ${hafezAll} poems`);
+      await moreBtn.click();
+      expect((await visible(page).count()) === Math.min(400, hafezAll), `${tag}: «نمایش بیشتر» shows ${await visible(page).count()}`);
+      const songsPicker = page.locator('.singer-select');
+      await songsPicker.selectOption('محمدرضا شجریان');
+      await page.locator('.platform-select').selectOption('spotify');
+      const shajarian = await expected(page, { singer: 'محمدرضا شجریان', platform: 'spotify', prefix: '/hafez/' });
+      const hafezOnly = await page.evaluate(() => [...document.querySelectorAll('.poems li:not([hidden]) a')].every((a) => a.getAttribute('href').startsWith('/hafez/')));
+      expect(shajarian.want > 0 && (await visible(page).count()) === shajarian.want && shajarian.wrong.length === 0 && hafezOnly, `${tag}: Hafez + Shajarian + Spotify shows ${await visible(page).count()}, index ${shajarian.want}`);
+      const songsOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(songsOverflow <= 0, `${tag}: songs page scrolls sideways by ${songsOverflow}px`);
+      await page.screenshot({ path: `shots/songs-page-${vp}-${scheme}.png` });
+      await page.reload();
+      await page.locator('.poet-select').waitFor();
+      expect((await page.locator('.poet-select').inputValue()) === '/hafez' && (await songsPicker.inputValue()) === 'محمدرضا شجریان' && (await visible(page).count()) === shajarian.want, `${tag}: songs page choices lost after a reload`);
+      await page.goto(base + '/');
+      await page.waitForSelector('.poets a');
+      expect((await page.locator('.songs-link[href="/songs"]').count()) === 1, `${tag}: home page has no link to the songs page`);
+
       // A book whose poems have no songs offers no filter.
       const indexRead = page.waitForResponse((r) => new URL(r.url()).pathname === '/api/sung');
       await page.goto(base + '/rahi/robaeeha');
@@ -241,7 +276,7 @@ try {
 } finally {
   await browser.close();
 }
-const EXPECTED = 4 * 49 + 3;
+const EXPECTED = 4 * 59 + 3;
 console.log(`${checks} checks ran`);
 if (checks < EXPECTED) problems.push(`only ${checks}/${EXPECTED} checks ran`);
 console.log(problems.length ? `FAIL\n${problems.join('\n')}` : 'PASS');
