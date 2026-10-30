@@ -1004,7 +1004,8 @@ body.has-video .update-bar {
 }
 .sung-mark svg,
 .sung-count svg,
-.sung-filter svg {
+.sung-filter svg,
+.play-filter svg {
   width: 1em;
   height: 1em;
   flex: none;
@@ -1018,7 +1019,8 @@ body.has-video .update-bar {
   font-size: 0.8rem;
   font-weight: 400;
 }
-.sung-filter {
+.sung-filter,
+.play-filter {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1032,14 +1034,49 @@ body.has-video .update-bar {
   font-size: 0.9rem;
   cursor: pointer;
 }
-.sung-filter:hover {
+.sung-filter:hover,
+.play-filter:hover {
   border-color: var(--accent);
 }
-.sung-filter[aria-pressed='true'] {
+.sung-filter[aria-pressed='true'],
+.play-filter[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
 }
-.poems.only-sung li:not(.sung) {
+.sung-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.sung-tools .sung-filter,
+.sung-tools .play-filter {
+  margin-bottom: 0;
+}
+.singer-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 100%;
+}
+.sung-none {
+  color: var(--muted);
+}
+.singer-filter[hidden],
+.play-filter[hidden] {
   display: none;
+}
+.singer-select {
+  min-width: 0;
+  max-width: 16rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
 }
