@@ -7,7 +7,7 @@ import { faDigits } from './format.js';
 import { stopPlayer } from './player.js';
 import { api } from './api.js';
 
-const PLATFORM_NAMES = {
+export const PLATFORM_NAMES = {
   spotify: 'اسپاتیفای',
   youtube: 'یوتیوب',
   golha: 'گلها',

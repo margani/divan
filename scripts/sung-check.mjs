@@ -1,6 +1,6 @@
 // Checks the "poems with songs" filter: a book marks the poems Ganjoor's music
 // index lists, «فقط شعرهای ترانه‌شده» narrows the list to them (and to one
-// singer, or to songs that play here) and survives going back from a poem
+// singer, a platform, or songs that play here) and survives going back from a poem
 // and a reload, a poet page counts each book's sung
 // poems, a book without any shows no filter, and a failing index leaves the
 // page as it was.
@@ -19,12 +19,32 @@ const expect = (ok, msg) => {
 };
 const persian = (s) => /^[\u0600-\u06FF]/.test(s.trim());
 const visible = (page) => page.locator('.poems li:visible');
+// «اسپاتیفای (۱۳)» -> 13
+const faCount = (text) => Number(text.match(/\(([۰-۹]+)\)$/)?.[1].replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+// Rows of this book with one track matching every given choice.
+const expected = (page, choice) =>
+  page.evaluate(async ({ singer, platform }) => {
+    const tracks = await window.sungTracks();
+    const all = [...document.querySelectorAll('.poems li a')].map((a) => a.getAttribute('href'));
+    const ok = (path) => (tracks[path] || []).some((t) => (!singer || t.singer === singer) && (!platform || t.platform === platform));
+    const shown = [...document.querySelectorAll('.poems li:not([hidden]) a')].map((a) => a.getAttribute('href'));
+    return { want: all.filter(ok).length, wrong: shown.filter((path) => !ok(path)) };
+  }, choice);
 
 try {
   for (const [vp, viewport] of [['phone', { width: 390, height: 844 }], ['desktop', { width: 1280, height: 900 }]]) {
     for (const scheme of ['light', 'dark']) {
       const tag = `${vp}/${scheme}`;
       const ctx = await browser.newContext({ viewport, colorScheme: scheme, serviceWorkers: 'block' });
+      // The index as the checks need it: each poem's tracks, names resolved.
+      await ctx.addInitScript(() => {
+        window.sungTracks = async () => {
+          const { singers, platforms, poems } = await (await fetch('/api/sung')).json();
+          return Object.fromEntries(
+            Object.entries(poems).map(([path, list]) => [path, list.map(([s, p, play]) => ({ singer: singers[s] ?? null, platform: platforms[p], playable: play === 1 }))]),
+          );
+        };
+      });
       const page = await ctx.newPage();
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
@@ -66,9 +86,9 @@ try {
       const singerRows = visible(page);
       expect((await singerRows.count()) === count && count > 0, `${tag}: «${singer}» shows ${await singerRows.count()} poems, its option says ${count}`);
       const wrong = await page.evaluate(async (name) => {
-        const { singers, poems } = await (await fetch('/api/sung')).json();
+        const tracks = await window.sungTracks();
         const shown = [...document.querySelectorAll('.poems li:not([hidden]) a')].map((a) => a.getAttribute('href'));
-        return shown.filter((path) => !(poems[path] || []).some((i) => singers[i] === name));
+        return shown.filter((path) => !(tracks[path] || []).some((t) => t.singer === name));
       }, singer);
       expect(wrong.length === 0, `${tag}: shown but not sung by «${singer}»: ${wrong.join(' ')}`);
       expect(new URL(page.url()).searchParams.get('songs') === singer, `${tag}: singer not in the URL (${page.url()})`);
@@ -86,15 +106,39 @@ try {
       await picker.selectOption('');
       expect((await visible(page).count()) === marked && new URL(page.url()).search === '?songs', `${tag}: «همهٔ خواننده‌ها» didn't bring back every sung poem`);
 
+      // «سرویس»: only poems with a track on that platform; with a singer, one
+      // track must be both («Banan on Spotify» is one recording).
+      const via = page.locator('.platform-select');
+      expect(await via.isVisible(), `${tag}: no platform list once the filter is on`);
+      const vias = await via.locator('option').evaluateAll((os) => os.map((o) => ({ value: o.value, text: o.textContent })));
+      expect(vias.length > 2 && vias[0].value === '' && vias.every((o) => persian(o.text)), `${tag}: platform options ${vias.map((o) => o.text).join(' | ')}`);
+      await via.selectOption('spotify');
+      const onSpotify = await expected(page, { platform: 'spotify' });
+      const spotifyLabel = faCount(vias.find((o) => o.value === 'spotify')?.text || '');
+      expect(onSpotify.want > 0 && (await visible(page).count()) === onSpotify.want && spotifyLabel === onSpotify.want, `${tag}: Spotify shows ${await visible(page).count()}, label ${spotifyLabel}, index ${onSpotify.want}`);
+      expect(onSpotify.wrong.length === 0, `${tag}: shown without a Spotify track: ${onSpotify.wrong.join(' ')}`);
+      expect(new URL(page.url()).searchParams.get('via') === 'spotify', `${tag}: platform not in the URL (${page.url()})`);
+      await picker.selectOption(singer);
+      const pair = await expected(page, { singer, platform: 'spotify' });
+      const bothShown = await visible(page).count();
+      expect(bothShown === pair.want && pair.wrong.length === 0 && (await page.locator('.sung-none').isVisible()) === (pair.want === 0), `${tag}: «${singer}» on Spotify shows ${bothShown}, index ${pair.want}, wrong ${pair.wrong.join(' ')}`);
+      await page.reload();
+      await page.locator('.sung-filter[aria-pressed="true"]').waitFor();
+      expect((await via.inputValue()) === 'spotify' && (await picker.inputValue()) === singer && (await visible(page).count()) === bothShown, `${tag}: singer + platform lost after a reload`);
+      await page.screenshot({ path: `shots/sung-platform-${vp}-${scheme}.png` });
+      await via.selectOption('');
+      await picker.selectOption('');
+      expect((await visible(page).count()) === marked && new URL(page.url()).search === '?songs', `${tag}: clearing singer and platform didn't bring back every sung poem`);
+
       // «قابل پخش»: only poems with a Spotify or YouTube song, alone and with
       // a singer; the label's count is what stays on screen.
       const play = page.locator('.play-filter');
       const playCount = async () => Number((await play.textContent()).match(/\(([۰-۹]+)\)$/)?.[1].replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
       const notPlayable = (name) =>
         page.evaluate(async (who) => {
-          const { singers, playable } = await (await fetch('/api/sung')).json();
+          const tracks = await window.sungTracks();
           const shown = [...document.querySelectorAll('.poems li:not([hidden]) a')].map((a) => a.getAttribute('href'));
-          return shown.filter((path) => !(playable[path] || []).some((i) => !who || singers[i] === who));
+          return shown.filter((path) => !(tracks[path] || []).some((t) => t.playable && (!who || t.singer === who)));
         }, name);
       expect(persian(await play.textContent()) && (await play.isVisible()), `${tag}: no «قابل پخش» chip`);
       await play.click();
@@ -103,10 +147,10 @@ try {
       expect((await notPlayable('')).length === 0, `${tag}: a shown poem has nothing playable`);
       expect(new URL(page.url()).searchParams.has('play'), `${tag}: «قابل پخش» not in the URL`);
       const playSinger = await page.evaluate(async () => {
-        const { singers, playable } = await (await fetch('/api/sung')).json();
+        const tracks = await window.sungTracks();
         const here = [...document.querySelectorAll('.poems li a')].map((a) => a.getAttribute('href'));
         const opts = [...document.querySelectorAll('.singer-select option')].map((o) => o.value).filter(Boolean);
-        return opts.find((name) => here.some((p) => (playable[p] || []).some((i) => singers[i] === name)));
+        return opts.find((name) => here.some((p) => (tracks[p] || []).some((t) => t.playable && t.singer === name)));
       });
       await picker.selectOption(playSinger);
       const both = await playCount();
@@ -123,10 +167,10 @@ try {
       await page.goBack();
       await page.locator('.play-filter[aria-pressed="true"]').waitFor();
       const silent = await page.evaluate(async () => {
-        const { singers, playable } = await (await fetch('/api/sung')).json();
+        const tracks = await window.sungTracks();
         const here = [...document.querySelectorAll('.poems li.sung a')].map((a) => a.getAttribute('href'));
         const opts = [...document.querySelectorAll('.singer-select option')].map((o) => o.value).filter(Boolean);
-        return opts.find((name) => !here.some((p) => (playable[p] || []).some((i) => singers[i] === name)));
+        return opts.find((name) => !here.some((p) => (tracks[p] || []).some((t) => t.playable && t.singer === name)));
       });
       if (silent) {
         await picker.selectOption(silent);
@@ -197,7 +241,7 @@ try {
 } finally {
   await browser.close();
 }
-const EXPECTED = 4 * 41 + 3;
+const EXPECTED = 4 * 49 + 3;
 console.log(`${checks} checks ran`);
 if (checks < EXPECTED) problems.push(`only ${checks}/${EXPECTED} checks ran`);
 console.log(problems.length ? `FAIL\n${problems.join('\n')}` : 'PASS');

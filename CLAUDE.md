@@ -42,7 +42,8 @@ nicer reader that credits and links Ganjoor on every poem page.
   each book's sung poems (`js/sung.js`). 0.8.0: with that filter on, a
   «خواننده» list narrows it to one singer (`?songs=<singer>`) and «قابل پخش»
   to songs that play in the docked player (`&play`; same rule as the «پخش»
-  button). Not built:
+  button). 0.9.0: a «سرویس» list narrows to a platform (`&via=spotify`);
+  filters combine per track. Not built:
   accounts, comments, favourites sync, search. Ask the owner before anything
   outside the agreed scope.
 - Audio always streams straight from i.ganjoor.net with `preload="none"`;
@@ -118,8 +119,9 @@ lies with the reuser.
   `index.html` for unknown paths, so poem URLs mirror Ganjoor's paths.
 - `functions/api/[[path]].js` is the only server code: `/api/poets`,
   `/api/page?url=/path` (poem or category), `/api/recitations?poem=ID`
-  (normal recitations only), `/api/songs?poem=ID` (one row per singer), `/api/sung` (`{singers, poems, playable}`, each
-  a `{path: [singer indexes]}` map, from Ganjoor's music index; an empty parse is a 502,
+  (normal recitations only), `/api/songs?poem=ID` (one row per singer), `/api/sung` (`{singers, platforms, poems: {path:
+  [[singer, platform, playable], …]}}`, per track, from Ganjoor's music
+  index; an empty parse is a 502,
   never cached),
   `/api/sync?id=ID` ([verseOrder, ms] pairs) and
   `/api/version`; logic in `lib/ganjoor.js`.

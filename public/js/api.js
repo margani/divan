@@ -4,7 +4,7 @@
 // «به‌روزرسانی», serving new code but answering /api from its own cache,
 // keyed by URL: 0.8.0's songs filter got 0.7.0's payload and vanished (#35).
 // The edge cache key ignores the extra parameter.
-export const API_SHAPE = 4;
+export const API_SHAPE = 5;
 
 export function api(path) {
   return `${path}${path.includes('?') ? '&' : '?'}shape=${API_SHAPE}`;

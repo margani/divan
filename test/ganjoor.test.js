@@ -231,7 +231,7 @@ test('poets carry the full name for search, and the payload version moved on', a
   const [p] = shapePoets([{ name: 'جلال الدین محمد مولوی', nickname: 'مولانا', fullUrl: '/moulavi', published: true }]);
   assert.equal(p.name, 'مولانا');
   assert.equal(p.fullName, 'جلال الدین محمد مولوی');
-  assert.equal(SHAPE_VERSION, 4);
+  assert.equal(SHAPE_VERSION, 5);
 });
 
 test('songs: one row per singer, players only for Spotify and YouTube', async () => {
@@ -332,53 +332,68 @@ test('sung: Ganjoor failing gives an uncached 502', async () => {
   assert.equal(cache.store.size, 0);
 });
 
+// Each poem's tracks as [{ singer, platform, playable }], names resolved.
+function tracksOf({ singers, platforms, poems }, path) {
+  return (poems[path] || []).map(([s, p, play]) => ({ singer: singers[s] ?? null, platform: platforms[p], playable: play === 1 }));
+}
+
 test('sung: each poem names its singers, Golha ones too', () => {
-  const { singers, poems } = shapeSung(fixture('mundex-bypoet.json'));
-  const of = (path) => poems[path].map((i) => singers[i]);
+  const sung = shapeSung(fixture('mundex-bypoet.json'));
+  const of = (path) => tracksOf(sung, path).map((t) => t.singer);
   // Golha: «خواننده ترانه: بنان، غلامحسین», surname first.
   assert.ok(of('/rahi/tarane/sh20').includes('غلامحسین بنان'), of('/rahi/tarane/sh20').join(' | '));
   assert.ok(of('/hafez/ghazal/sh1').includes('ایرج بسطامی'));
   assert.ok(of('/hafez/ghazal/sh1').includes('محمدرضا شجریان'));
-  for (const list of Object.values(poems)) assert.equal(new Set(list).size, list.length, 'a singer once per poem');
-  assert.equal(new Set(singers).size, singers.length, 'each singer once');
+  assert.equal(new Set(sung.singers).size, sung.singers.length, 'each singer once');
+  for (const list of Object.values(sung.poems)) {
+    const keys = list.map((t) => t.join());
+    assert.equal(new Set(keys).size, keys.length, 'a singer, platform and playability once per poem');
+  }
 });
 
 test('sung: singer names are decoded, folded and ranked by tracks', () => {
   const li = (href, body) => `<li><p>\n<a href="${href}">x</a> در ${body}</p></li>`;
   const html = [
     li('/a/b/sh1', 'Jojo Mayer &amp; Nerve  » al » <a href="https://open.spotify.com/track/x">t</a>'),
-    li('/a/b/sh1', 'علي  اكبري  » al » <a href="https://x">t</a>'),
-    li('/a/b/sh2', '\u200Fعلی اکبری  » al » <a href="https://x">t</a>'),
+    li('/a/b/sh1', 'علي  اكبري  » al » <a href="https://x.example">t</a>'),
+    li('/a/b/sh2', '\u200Fعلی اکبری  » al » <a href="https://x.example">t</a>'),
     li('/a/b/sh3', 'گلها  » برگ سبز » شمارهٔ ۳ » <a href="http://www.golha.co.uk/fa/programme/25">(۲۴:۵۲ - ۲۵:۱۶) گوینده: پیمان، اسدالله</a>'),
     li('/a/b/sh4', 'گلها  » گلهای جاویدان » <a href="http://www.golha.co.uk/fa/programme/325">نوازندگان: عبادی، احمد (‎سه‌تار) خواننده آواز: مرضیه سراینده شعر آواز: حافظ</a>'),
   ].join('\n');
-  const { singers, poems } = shapeSung({ htmlText: html });
-  assert.deepEqual(singers, ['علی اکبری', 'Jojo Mayer & Nerve', 'مرضیه']);
-  assert.deepEqual(poems['/a/b/sh1'], [1, 0]);
-  assert.deepEqual(poems['/a/b/sh3'], [], 'a Golha track with no singer still marks the poem');
-  assert.deepEqual(poems['/a/b/sh4'], [2]);
+  const sung = shapeSung({ htmlText: html });
+  assert.deepEqual(sung.singers, ['علی اکبری', 'Jojo Mayer & Nerve', 'مرضیه']);
+  assert.deepEqual(tracksOf(sung, '/a/b/sh1').map((t) => t.singer), ['Jojo Mayer & Nerve', 'علی اکبری']);
+  assert.deepEqual(tracksOf(sung, '/a/b/sh3'), [{ singer: null, platform: 'golha', playable: false }], 'a Golha track with no singer still marks the poem');
+  assert.deepEqual(tracksOf(sung, '/a/b/sh4').map((t) => t.singer), ['مرضیه']);
 });
 
-test('sung: which singers of a poem can play in the page (Spotify track or YouTube video)', () => {
+test('sung: each track says its platform and whether it plays in the page', () => {
   const li = (href, body) => `<li><p>\n<a href="${href}">x</a> در ${body}</p></li>`;
   const html = [
     li('/a/b/sh1', 'الف  » al » <a href="https://open.spotify.com/track/1YFexazC7gxVdidvCyqZ3X">t</a>'),
-    li('/a/b/sh1', 'ب  » al » <a href="https://beeptunes.com/track/551739260">t</a>'),
+    li('/a/b/sh1', 'الف  » al » <a href="https://beeptunes.com/track/551739260">t</a>'),
     li('/a/b/sh2', 'ب  » al » <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ&amp;list=x">t</a>'),
     li('/a/b/sh3', 'الف  » al » <a href="https://open.spotify.com/track/not-an-id">t</a>'),
     li('/a/b/sh4', 'گلها  » برگ سبز » <a href="http://www.golha.co.uk/fa/programme/25">خواننده آواز: مرضیه</a>'),
+    li('/a/b/sh5', 'ج  » al » <a href="https://music.apple.com/x">t</a>'),
+    li('/a/b/sh5', 'ج  » al » <a href="ftp://odd.example/x">t</a>'),
   ].join('\n');
-  const { singers, playable } = shapeSung({ htmlText: html });
-  const names = (path) => (playable[path] || []).map((i) => singers[i]);
-  assert.deepEqual(names('/a/b/sh1'), ['الف']);
-  assert.deepEqual(names('/a/b/sh2'), ['ب'], 'entity-encoded YouTube link');
-  assert.deepEqual(names('/a/b/sh3'), [], 'a malformed Spotify id is not playable');
-  assert.deepEqual(names('/a/b/sh4'), [], 'Golha is a link out');
-  assert.deepEqual(Object.keys(playable).sort(), ['/a/b/sh1', '/a/b/sh2']);
+  const sung = shapeSung({ htmlText: html });
+  assert.deepEqual(tracksOf(sung, '/a/b/sh1'), [
+    { singer: 'الف', platform: 'spotify', playable: true },
+    { singer: 'الف', platform: 'beeptunes', playable: false },
+  ]);
+  assert.deepEqual(tracksOf(sung, '/a/b/sh2'), [{ singer: 'ب', platform: 'youtube', playable: true }], 'entity-encoded YouTube link');
+  assert.deepEqual(tracksOf(sung, '/a/b/sh3'), [{ singer: 'الف', platform: 'spotify', playable: false }], 'a malformed Spotify id is not playable');
+  assert.deepEqual(tracksOf(sung, '/a/b/sh4'), [{ singer: 'مرضیه', platform: 'golha', playable: false }], 'Golha is a link out');
+  assert.deepEqual(tracksOf(sung, '/a/b/sh5'), [
+    { singer: 'ج', platform: 'apple', playable: false },
+    { singer: 'ج', platform: 'other', playable: false },
+  ]);
 
   const real = shapeSung(fixture('mundex-bypoet.json'));
-  assert.ok(real.playable['/hafez/ghazal/sh1'].length > 0);
-  for (const [path, ids] of Object.entries(real.playable)) {
-    assert.ok(ids.every((i) => real.poems[path].includes(i)), `${path}: playable singer not among its singers`);
-  }
+  const hafez = tracksOf(real, '/hafez/ghazal/sh1');
+  assert.ok(hafez.some((t) => t.platform === 'spotify' && t.playable));
+  assert.ok(real.platforms.includes('golha') && real.platforms.includes('beeptunes'));
+  assert.ok(Object.values(real.poems).flat().every(([s, p, play]) => s >= -1 && s < real.singers.length && real.platforms[p] && (play === 0 || play === 1)));
 });
