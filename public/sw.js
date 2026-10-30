@@ -3,11 +3,11 @@
 // VERSION is the app version (test/version.test.js keeps it equal to
 // package.json): every release changes this file, which is how browsers
 // notice an update and the page can offer it (js/update.js).
-const VERSION = '0.9.0';
+const VERSION = '0.10.0';
 const SHELL = `divan-shell-${VERSION}`;
 // Versioned like lib/ganjoor.js SHAPE_VERSION, so a device never keeps
 // showing a payload shape the app no longer expects.
-const DATA = 'divan-data-v5';
+const DATA = 'divan-data-v6';
 const SHELL_FILES = [
   // Not /index.html: Pages answers it with a redirect to /, and a cached
   // redirect can't serve a navigation, which broke offline reloads.
@@ -25,6 +25,7 @@ const SHELL_FILES = [
   '/js/songs.js',
   '/js/sung.js',
   '/js/api.js',
+  '/js/favorites.js',
   '/js/finder.js',
   '/js/update.js',
   '/js/theme-init.js',

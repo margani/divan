@@ -118,6 +118,8 @@ export function homeView(poets) {
   return [
     h('h1', {}, 'سخنوران'),
     h('p', { class: 'lede' }, `دیوان ${faDigits(poets.length)} سخنور پارسی‌گو را دربر دارد.`),
+    // Songs across every poet, before choosing one (sung.js).
+    h('a', { class: 'songs-link', href: '/songs' }, 'شعرهایی که ترانه شده‌اند'),
     h(
       'div',
       { class: 'finder' },

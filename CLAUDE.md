@@ -43,7 +43,11 @@ nicer reader that credits and links Ganjoor on every poem page.
   «خواننده» list narrows it to one singer (`?songs=<singer>`) and «قابل پخش»
   to songs that play in the docked player (`&play`; same rule as the «پخش»
   button). 0.9.0: a «سرویس» list narrows to a platform (`&via=spotify`);
-  filters combine per track. Not built:
+  filters combine per track. 0.10.0: a songs page `/songs` («ترانه‌ها»)
+  lists every sung poem across poets with the same filters plus a poet
+  (`&poet=/hafez`), linked from home and each poet page; favourites
+  («علاقه‌مندی‌ها», `/favorites`, `js/favorites.js`): a poem or a tapped
+  couplet, kept only in this browser's localStorage. Not built:
   accounts, comments, favourites sync, search. Ask the owner before anything
   outside the agreed scope.
 - Audio always streams straight from i.ganjoor.net with `preload="none"`;
@@ -120,8 +124,8 @@ lies with the reuser.
 - `functions/api/[[path]].js` is the only server code: `/api/poets`,
   `/api/page?url=/path` (poem or category), `/api/recitations?poem=ID`
   (normal recitations only), `/api/songs?poem=ID` (one row per singer), `/api/sung` (`{singers, platforms, poems: {path:
-  [[singer, platform, playable], …]}}`, per track, from Ganjoor's music
-  index; an empty parse is a 502,
+  [[singer, platform, playable], …]}, titles, poets}`, per track, from
+  Ganjoor's music index; an empty parse is a 502,
   never cached),
   `/api/sync?id=ID` ([verseOrder, ms] pairs) and
   `/api/version`; logic in `lib/ganjoor.js`.
@@ -132,11 +136,12 @@ lies with the reuser.
 
 ## Checks before merging
 
-`npm test`, then with `npm run dev` running: `npm run shots` (32 page/viewport/
+`npm test`, then with `npm run dev` running: `npm run shots` (40 page/viewport/
 theme checks, screenshots in `shots/`), `node scripts/offline-check.mjs` and
 `node scripts/player-check.mjs` (plays real Ganjoor audio),
 `node scripts/header-check.mjs`, `node scripts/finder-check.mjs`,
-`node scripts/songs-check.mjs`, `node scripts/sung-check.mjs` and
+`node scripts/songs-check.mjs`, `node scripts/sung-check.mjs`,
+`node scripts/favorites-check.mjs` and
 `TMPDIR=<scratch> node scripts/update-check.mjs` (a returning reader gets new
 code despite a long browser cache). Before every release, also run
 `node scripts/upgrade-check.mjs <previous-release-url> <this-url>`: the
@@ -210,3 +215,10 @@ Look at the screenshots, not just the exit code.
   `/api` request now goes through `api()` (`js/api.js`), which adds
   `shape=N`, so an old worker's URL-keyed cache can't answer it.
   `scripts/upgrade-check.mjs` reproduces it.
+- 2026-10-30: the first internal link with a query (`/songs?poet=/hafez`)
+  lost it: the click handler in `app.js` pushed only `url.pathname`. It now
+  keeps `url.search`; `sung-check` follows the poet page's link.
+- 2026-10-30: moving the book filter into a shared `songFilters` made it
+  hide only the sung rows, so poems without songs stayed visible with the
+  filter on. A book's list holds more than the filter's rows: hide over
+  `list.children`. `sung-check` caught it.

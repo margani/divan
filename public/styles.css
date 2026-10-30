@@ -1083,3 +1083,173 @@ body.has-video .update-bar {
   color: var(--text);
   font: inherit;
 }
+
+/* Songs page and the links to it */
+
+.songs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.songs-link:hover {
+  border-color: var(--accent);
+}
+.songs-link svg {
+  width: 1em;
+  height: 1em;
+}
+.poet-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 100%;
+}
+.poet-filter[hidden] {
+  display: none;
+}
+.poet-select {
+  min-width: 0;
+  max-width: 16rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.songs-summary {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.more-btn,
+.fav-remove,
+.fav-close {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--accent);
+}
+.more-btn {
+  display: block;
+  margin: 1rem auto 0;
+  padding: 0.5rem 1.2rem;
+}
+.more-btn[hidden] {
+  display: none;
+}
+
+/* Favourites */
+
+.fav-link[aria-current='page'] {
+  color: var(--accent);
+}
+.fav-poem,
+.fav-couplet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.fav-poem {
+  margin-top: 0.75rem;
+}
+.fav-poem svg,
+.fav-couplet svg {
+  width: 1em;
+  height: 1em;
+}
+.fav-poem[aria-pressed='false'] svg path,
+.fav-couplet[aria-pressed='false'] svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.poem .selected {
+  background: var(--accent-soft);
+  border-radius: 8px;
+}
+.poem .faved {
+  position: relative;
+}
+.poem .faved::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: -0.7rem;
+  top: 0.55em;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.verse-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.9rem;
+}
+.fav-close {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.fav-couplets,
+.fav-poems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.fav-couplets li,
+.fav-poems li {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.fav-couplets blockquote {
+  margin: 0;
+  text-align: center;
+  font-size: var(--poem-size);
+  line-height: 2;
+}
+.fav-couplets blockquote p {
+  margin: 0;
+}
+.fav-source,
+.fav-poems li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+}
+.fav-remove {
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.fav-empty {
+  color: var(--muted);
+  line-height: 2;
+}
