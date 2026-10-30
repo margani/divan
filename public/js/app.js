@@ -3,6 +3,7 @@ import { faDigits, groupByCentury } from './format.js';
 import { h, nodes } from './dom.js';
 import { loadRecitations, stopPlayer } from './player.js';
 import { VERSION } from './version.js';
+import { setupHeader } from './header.js';
 
 const app = document.getElementById('app');
 const GANJOOR = 'https://ganjoor.net';
@@ -188,6 +189,7 @@ document.addEventListener('click', (e) => {
 });
 
 window.addEventListener('popstate', route);
+setupHeader();
 document.getElementById('version').textContent = `نسخهٔ ${faDigits(VERSION)}`;
 route();
 

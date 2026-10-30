@@ -22,8 +22,10 @@
   --measure: 54rem;
 }
 
+/* Dark follows the OS unless the reader chose a theme with the header
+   button (data-theme on <html>, set by js/theme-init.js before paint). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #17140f;
     --surface: #1f1b15;
     --text: #ece4d7;
@@ -33,6 +35,17 @@
     --line: #322b21;
     --shadow: none;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: #17140f;
+  --surface: #1f1b15;
+  --text: #ece4d7;
+  --muted: #a99c8a;
+  --accent: #dcae6e;
+  --accent-soft: #2c251b;
+  --line: #322b21;
+  --shadow: none;
 }
 
 *,
@@ -93,6 +106,57 @@ footer.site {
 
 header.site {
   padding-block: 1.25rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tools {
+  display: flex;
+  gap: 0.35rem;
+}
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  color: var(--accent);
+  border-color: var(--line);
+  background: var(--surface);
+}
+.icon-btn svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+.icon-btn[hidden] {
+  display: none;
+}
+
+.hint {
+  position: fixed;
+  inset-inline: var(--gutter);
+  top: 4.5rem;
+  z-index: 6;
+  max-width: 24rem;
+  margin-inline: auto;
+  padding: 0.9rem 1.1rem;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.15);
+  font-size: 0.95rem;
+}
+.hint p {
+  margin: 0;
 }
 
 .brand {
@@ -553,4 +617,12 @@ body.has-player {
   .poem [data-o] {
     transition: none;
   }
+}
+
+/* Native controls (select, range) follow the chosen theme too. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
