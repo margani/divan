@@ -3,6 +3,7 @@
 // how many of each book's poems have songs.
 import { h } from './dom.js';
 import { faDigits } from './format.js';
+import { api } from './api.js';
 
 const NOTE =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z" fill="currentColor"/></svg>';
@@ -20,7 +21,7 @@ let index = null;
 // next page can try again. Each poem maps to its singers, and to those whose
 // song plays here (Spotify or YouTube in the docked player).
 function sungIndex() {
-  index ??= fetch('/api/sung')
+  index ??= fetch(api('/api/sung'))
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
     .then(({ singers, poems, playable = {} }) => {
       const names = (ids) => ids.map((i) => singers[i]);

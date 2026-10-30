@@ -165,7 +165,7 @@ try {
       await page.locator('.books').screenshot({ path: `shots/sung-poet-${vp}-${scheme}.png` });
 
       // A book whose poems have no songs offers no filter.
-      const indexRead = page.waitForResponse((r) => r.url().endsWith('/api/sung'));
+      const indexRead = page.waitForResponse((r) => new URL(r.url()).pathname === '/api/sung');
       await page.goto(base + '/rahi/robaeeha');
       await page.waitForSelector('.poems li');
       await indexRead;
@@ -182,7 +182,7 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.route('**/api/sung', (r) => r.fulfill({ status: 502, body: '{"error":"upstream"}' }));
+    await page.route((url) => url.pathname === '/api/sung', (r) => r.fulfill({ status: 502, body: '{"error":"upstream"}' }));
     await page.goto(base + '/rahi/tarane?songs');
     await page.waitForSelector('.poems li');
     await page.waitForTimeout(800);
