@@ -15,5 +15,6 @@
   },
   "allowScripts": {
     "workerd@1.20261023.1": true
-  }
+  },
+  "license": "MIT"
 }
