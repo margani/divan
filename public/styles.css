@@ -762,3 +762,49 @@ dialog.letters::backdrop {
   color: var(--accent);
   cursor: pointer;
 }
+
+/* Update offer */
+
+.update-bar {
+  position: fixed;
+  z-index: 7;
+  inset-inline: var(--gutter);
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  max-width: 30rem;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem 0.6rem 1rem;
+  border-radius: 14px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.25);
+  font-size: 0.95rem;
+}
+.update-bar p {
+  flex: 1;
+  margin: 0;
+}
+.update-bar button {
+  font: inherit;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.update-apply {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+.update-later {
+  background: transparent;
+  color: inherit;
+  opacity: 0.75;
+}
+/* Above the recitation player when one is open. */
+body.has-player .update-bar {
+  bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}

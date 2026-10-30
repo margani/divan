@@ -37,8 +37,10 @@ nicer reader that credits and links Ganjoor on every poem page.
 - Audio always streams straight from i.ganjoor.net with `preload="none"`;
   never proxy or cache mp3s through Cloudflare (CDN terms on audio, and it
   would multiply nothing for Ganjoor anyway).
-- The app version lives in `package.json` and `public/js/version.js`; a test
-  keeps them equal. Bump both together.
+- The app version lives in `package.json`, `public/js/version.js` and the
+  `VERSION` line of `public/sw.js`; a test keeps them equal. Bump all three
+  for every release: the sw.js change is what makes browsers see an update,
+  and the reader is then offered it («به‌روزرسانی» bar, `js/update.js`).
 
 ## Ganjoor data (researched 2026-10-30)
 
