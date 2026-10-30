@@ -1,6 +1,6 @@
 {
   "name": "divan",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "A modern reading interface for Persian poetry, built on Ganjoor's public data",

@@ -1,7 +1,9 @@
 // Offline reading: the app shell is precached, and every page the reader has
-// opened stays readable without a connection. Bump VERSION when shell files
-// change so old caches are dropped.
-const VERSION = 'v7';
+// opened stays readable without a connection.
+// VERSION is the app version (test/version.test.js keeps it equal to
+// package.json): every release changes this file, which is how browsers
+// notice an update and the page can offer it (js/update.js).
+const VERSION = '0.4.0';
 const SHELL = `divan-shell-${VERSION}`;
 // Versioned like lib/ganjoor.js SHAPE_VERSION, so a device never keeps
 // showing a payload shape the app no longer expects.
@@ -20,6 +22,7 @@ const SHELL_FILES = [
   '/js/header.js',
   '/js/home.js',
   '/js/finder.js',
+  '/js/update.js',
   '/js/theme-init.js',
   '/fonts/Vazirmatn-wght.woff2',
   '/manifest.webmanifest',
@@ -29,7 +32,13 @@ const SHELL_FILES = [
 self.addEventListener('install', (e) => {
   // cache: 'reload' so the offline copy isn't filled from a stale browser cache.
   const fresh = SHELL_FILES.map((u) => new Request(u, { cache: 'reload' }));
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(fresh)).then(() => self.skipWaiting()));
+  // No skipWaiting here: a new version waits until the reader taps
+  // «به‌روزرسانی», so nothing (a recitation, say) is cut off mid-way.
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(fresh)));
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data === 'skip-waiting') self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {

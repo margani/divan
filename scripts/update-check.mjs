@@ -15,7 +15,13 @@ import { extname, join } from 'node:path';
 const api = 'http://localhost:8788';
 const dir = mkdtempSync(join(process.env.TMPDIR || tmpdir(), 'divan-update-'));
 cpSync(new URL('../public', import.meta.url).pathname, dir, { recursive: true });
-const setVersion = (v) => writeFileSync(join(dir, 'js/version.js'), `export const VERSION = '${v}';\n`);
+// A release changes both version.js and sw.js, as a real version bump does.
+const swPath = join(dir, 'sw.js');
+const swSource = readFileSync(swPath, 'utf8');
+const setVersion = (v) => {
+  writeFileSync(join(dir, 'js/version.js'), `export const VERSION = '${v}';\n`);
+  writeFileSync(swPath, swSource.replace(/^const VERSION = '[^']+';/m, `const VERSION = '${v}';`));
+};
 setVersion('9.9.1');
 
 const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
@@ -62,6 +68,11 @@ try {
   await page.reload();
   await page.waitForSelector('.poets a');
   const before = await page.textContent('#version');
+  // A first visit installs quietly: no update offer.
+  if ((await page.locator('.update-bar').count()) !== 0) {
+    console.log('update bar shown on a first visit');
+    failed = true;
+  }
   await page.close();
   setVersion('9.9.2');
   if (process.env.LOG) console.log('--- release, new visit ---');
@@ -71,7 +82,31 @@ try {
   await again.waitForSelector('.poets a');
   const after = await again.textContent('#version');
   console.log({ before, after });
-  failed = !before.includes('۹.۹.۱') || !after.includes('۹.۹.۲');
+  if (!before.includes('۹.۹.۱') || !after.includes('۹.۹.۲')) failed = true;
+
+  // A page left open across a release: coming back to it shows the update
+  // bar, and its button switches to the new version.
+  setVersion('9.9.3');
+  await again.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  const bar = again.locator('.update-bar');
+  await bar.waitFor({ timeout: 15000 });
+  const barText = (await bar.textContent()).trim();
+  await again.setViewportSize({ width: 390, height: 844 });
+  await again.screenshot({ path: 'shots/update-bar-phone.png' });
+  console.log({ barText });
+  if (!/^[\u0600-\u06FF]/.test(barText)) failed = true;
+  // Nothing reloads until the reader asks.
+  {
+    if (!(await again.textContent('#version')).includes('۹.۹.۲')) failed = true;
+  }
+  await Promise.all([again.waitForEvent('load'), bar.locator('.update-apply').click()]);
+  await again.waitForSelector('.poets a');
+  const updated = await again.textContent('#version');
+  console.log({ updated });
+  if (!updated.includes('۹.۹.۳')) failed = true;
 } catch (err) {
   console.error(err.message);
   failed = true;

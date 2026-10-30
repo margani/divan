@@ -5,6 +5,7 @@ import { loadRecitations, stopPlayer } from './player.js';
 import { VERSION } from './version.js';
 import { setupHeader } from './header.js';
 import { homeView } from './home.js';
+import { watchUpdates } from './update.js';
 
 const app = document.getElementById('app');
 const GANJOOR = 'https://ganjoor.net';
@@ -186,6 +187,4 @@ setupHeader();
 document.getElementById('version').textContent = `نسخهٔ ${faDigits(VERSION)}`;
 route();
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch((err) => console.warn('service worker', err));
-}
+watchUpdates();
