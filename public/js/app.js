@@ -6,6 +6,7 @@ import { VERSION } from './version.js';
 import { setupHeader } from './header.js';
 import { homeView } from './home.js';
 import { aboutView } from './about.js';
+import { loadSongs, stopSong } from './songs.js';
 import { watchUpdates } from './update.js';
 
 const app = document.getElementById('app');
@@ -124,9 +125,11 @@ function renderPoem(poem) {
       ),
     ),
   );
+  const songs = h('section', { class: 'songs', 'aria-label': 'ترانه‌ها' });
   render(
     head,
     article,
+    songs,
     h(
       'aside',
       { class: 'credit' },
@@ -143,14 +146,16 @@ function renderPoem(poem) {
   );
   const token = navToken;
   loadRecitations(poem, { head, article, isCurrent: () => token === navToken });
+  loadSongs(poem, { section: songs, isCurrent: () => token === navToken });
 }
 
 let navToken = 0;
 
 async function route() {
   const token = ++navToken;
-  // A recitation belongs to its poem; leaving the page ends it.
+  // A recitation or song belongs to its poem; leaving the page ends it.
   stopPlayer();
+  stopSong();
   const path = decodeURIComponent(location.pathname).replace(/\/+$/, '') || '/';
   const aboutLink = document.querySelector('.about-link');
   if (path === '/about') aboutLink.setAttribute('aria-current', 'page');
