@@ -3,7 +3,10 @@
 // it, and leaving the poem stops playback. Screenshots go to shots/.
 // Usage: npm run dev (in another shell), then node scripts/player-check.mjs [base-url]
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
+
+const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url))).version;
+const faVersion = version.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
 
 const base = process.argv[2] || 'http://localhost:8788';
 const poem = '/hafez/ghazal/sh1';
@@ -31,7 +34,7 @@ try {
     await page.goto(base + poem);
     await page.waitForSelector('.listen', { timeout: 15000 });
     expect(mp3.length === 0, `${vp}: audio was fetched before pressing play`);
-    expect((await page.textContent('#version')) === 'نسخهٔ ۰.۲.۰', `${vp}: footer version is ${await page.textContent('#version')}`);
+    expect((await page.textContent('#version')) === `نسخهٔ ${faVersion}`, `${vp}: footer version is ${await page.textContent('#version')}`);
 
     await page.click('.listen');
     await page.waitForSelector('.player');

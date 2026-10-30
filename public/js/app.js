@@ -1,8 +1,10 @@
 import { buildBlocks, splitStanzas } from './layout.js';
-import { faDigits, groupByCentury } from './format.js';
+import { faDigits } from './format.js';
 import { h, nodes } from './dom.js';
 import { loadRecitations, stopPlayer } from './player.js';
 import { VERSION } from './version.js';
+import { setupHeader } from './header.js';
+import { homeView } from './home.js';
 
 const app = document.getElementById('app');
 const GANJOOR = 'https://ganjoor.net';
@@ -40,15 +42,7 @@ function showState(message, retry) {
 
 function renderHome(poets) {
   setTitle();
-  const groups = groupByCentury(poets);
-  render(
-    h('h1', {}, 'سخنوران'),
-    h('p', { class: 'lede' }, `دیوان ${faDigits(poets.length)} سخنور پارسی‌گو، به ترتیب سده‌ای که در آن درگذشته‌اند.`),
-    groups.map((g) => [
-      h('h2', {}, g.title),
-      h('ul', { class: 'poets' }, g.poets.map((p) => h('li', {}, h('a', { href: p.url }, p.name)))),
-    ]),
-  );
+  render(homeView(poets));
 }
 
 function renderCat(cat) {
@@ -188,6 +182,7 @@ document.addEventListener('click', (e) => {
 });
 
 window.addEventListener('popstate', route);
+setupHeader();
 document.getElementById('version').textContent = `نسخهٔ ${faDigits(VERSION)}`;
 route();
 
