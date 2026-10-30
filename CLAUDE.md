@@ -99,7 +99,9 @@ lies with the reuser.
 `npm test`, then with `npm run dev` running: `npm run shots` (28 page/viewport/
 theme checks, screenshots in `shots/`), `node scripts/offline-check.mjs` and
 `node scripts/player-check.mjs` (plays real Ganjoor audio),
-`node scripts/header-check.mjs` and `node scripts/finder-check.mjs`. After a
+`node scripts/header-check.mjs`, `node scripts/finder-check.mjs` and
+`TMPDIR=<scratch> node scripts/update-check.mjs` (a returning reader gets new
+code despite a long browser cache). After a
 deploy, run player-check against https://divan.whosane.dev too.
 Look at the screenshots, not just the exit code.
 
@@ -108,7 +110,8 @@ Look at the screenshots, not just the exit code.
 - 2026-10-30: `api.ganjoor.net/api/ganjoor/poem` returns an empty `verses`
   list when `verseDetails=false`; it must be `true`. Wrangler's local cache
   then kept the empty answer, so clear `.wrangler/state/v3/cache` after
-  proxy changes.
+  proxy changes — with the dev server stopped (deleting it under a running
+  server makes every cached endpoint answer 500).
 - 2026-10-30: Pages answers `/index.html` with a 308 to `/`. Never precache
   `/index.html` in the service worker: a cached redirect can't serve a
   navigation, which broke offline reloads.
@@ -131,3 +134,10 @@ Look at the screenshots, not just the exit code.
 - 2026-10-30: `\u` escapes typed into a tool call reach the file as literal
   characters (invisible ZWNJ, harakat). Write such regexes from char codes
   and check with `grep -nP '[^\x00-\x7F]'`.
+- 2026-10-30: the whosane.dev zone's Browser Cache TTL (4 h) overrides
+  Pages' `max-age=0` for JS/CSS on the custom domain (pages.dev is not
+  affected), so returning readers kept old code after a release. The service
+  worker now fetches code with `cache: 'no-cache'` and precaches with
+  `cache: 'reload'`; `scripts/update-check.mjs` reproduces it. Playwright
+  request interception disables the HTTP cache, so that check runs its own
+  server.

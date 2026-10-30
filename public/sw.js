@@ -1,7 +1,7 @@
 // Offline reading: the app shell is precached, and every page the reader has
 // opened stays readable without a connection. Bump VERSION when shell files
 // change so old caches are dropped.
-const VERSION = 'v6';
+const VERSION = 'v7';
 const SHELL = `divan-shell-${VERSION}`;
 // Versioned like lib/ganjoor.js SHAPE_VERSION, so a device never keeps
 // showing a payload shape the app no longer expects.
@@ -27,7 +27,9 @@ const SHELL_FILES = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(SHELL_FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' so the offline copy isn't filled from a stale browser cache.
+  const fresh = SHELL_FILES.map((u) => new Request(u, { cache: 'reload' }));
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(fresh)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -49,14 +51,14 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(staleWhileRevalidate(req, e));
   } else if (req.mode === 'navigate') {
     // Every route is the same SPA shell; network first so deploys show up.
-    e.respondWith(fetch(req).catch(() => caches.match('/')));
+    e.respondWith(fresh(req).catch(() => caches.match('/')));
   } else if (url.pathname.startsWith('/fonts/') || url.pathname.startsWith('/icons/')) {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
   } else {
     // Code and styles go network first, so a deploy reaches readers without
     // anyone having to remember to bump VERSION.
     e.respondWith(
-      fetch(req)
+      fresh(req)
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();
@@ -68,6 +70,13 @@ self.addEventListener('fetch', (e) => {
     );
   }
 });
+
+// The whosane.dev zone gives JS and CSS a 4-hour browser cache, which
+// overrides Pages' max-age=0. Revalidating (a cheap ETag check) keeps a
+// returning reader from running last release's code against new HTML.
+function fresh(req) {
+  return fetch(req, { cache: 'no-cache' });
+}
 
 async function staleWhileRevalidate(req, e) {
   const cache = await caches.open(DATA);
