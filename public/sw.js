@@ -1,7 +1,7 @@
 // Offline reading: the app shell is precached, and every page the reader has
 // opened stays readable without a connection. Bump VERSION when shell files
 // change so old caches are dropped.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL = `divan-shell-${VERSION}`;
 const DATA = 'divan-data';
 const SHELL_FILES = [
@@ -12,6 +12,9 @@ const SHELL_FILES = [
   '/js/app.js',
   '/js/layout.js',
   '/js/format.js',
+  '/js/dom.js',
+  '/js/player.js',
+  '/js/version.js',
   '/fonts/Vazirmatn-wght.woff2',
   '/manifest.webmanifest',
   '/icons/icon.svg',

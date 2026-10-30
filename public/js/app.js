@@ -1,27 +1,11 @@
 import { buildBlocks, splitStanzas } from './layout.js';
 import { faDigits, groupByCentury } from './format.js';
+import { h, nodes } from './dom.js';
+import { loadRecitations, stopPlayer } from './player.js';
+import { VERSION } from './version.js';
 
 const app = document.getElementById('app');
 const GANJOOR = 'https://ganjoor.net';
-
-// Builds DOM with textContent only: poem text and bios come from a third
-// party, so nothing from the API is ever parsed as HTML.
-function h(tag, attrs = {}, ...children) {
-  const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (v == null || v === false) continue;
-    if (k === 'class') el.className = v;
-    else el.setAttribute(k, v);
-  }
-  el.append(...nodes(children));
-  return el;
-}
-
-// Sections are built as nested arrays with `cond && [...]`; DOM append would
-// stringify those, so flatten and drop the empty parts first.
-function nodes(children) {
-  return children.flat(Infinity).filter((c) => c != null && c !== false);
-}
 
 function render(...children) {
   app.replaceChildren(...nodes(children));
@@ -103,16 +87,20 @@ function renderCat(cat) {
   );
 }
 
+// data-o is the verse order a recitation's timings point at.
+function line(b, i, cls) {
+  return h('p', { class: cls, 'data-o': b.orders?.[i] ?? null }, b.lines[i]);
+}
+
 function renderBlock(b) {
   switch (b.type) {
     case 'couplet':
-      return h('div', { class: 'couplet' }, h('p', { class: 'h1' }, b.lines[0]), h('p', { class: 'h2' }, b.lines[1]));
+      return h('div', { class: 'couplet' }, line(b, 0, 'h1'), line(b, 1, 'h2'));
     case 'band':
-      return h('div', { class: 'band' }, b.lines.map((l) => h('p', {}, l)));
     case 'free':
-      return h('div', { class: 'free' }, b.lines.map((l) => h('p', {}, l)));
+      return h('div', { class: b.type }, b.lines.map((_, i) => line(b, i)));
     default:
-      return h('p', { class: b.type }, b.lines[0]);
+      return line(b, 0, b.type);
   }
 }
 
@@ -121,46 +109,52 @@ function renderPoem(poem) {
   const stanzas = splitStanzas(buildBlocks(poem.verses));
   const numbered = stanzas.length > 1;
   const original = GANJOOR + poem.url;
-  render(
-    h(
-      'header',
-      { class: 'poem-head' },
-      crumbs(poem.breadcrumb),
-      h('h1', {}, poem.title),
-      poem.poet && h('p', { class: 'by' }, 'سرودهٔ ', h('a', { href: poem.poet.url }, poem.poet.name)),
-    ),
-    h(
-      'article',
-      { class: 'poem', lang: 'fa' },
-      stanzas.map((s, i) =>
-        h(
-          'section',
-          { class: 'stanza', 'aria-label': numbered ? `بند ${faDigits(i + 1)}` : null },
-          numbered && h('span', { class: 'stanza-title' }, `بند ${faDigits(i + 1)}`),
-          s.blocks.map(renderBlock),
-        ),
+  const head = h(
+    'header',
+    { class: 'poem-head' },
+    crumbs(poem.breadcrumb),
+    h('h1', {}, poem.title),
+    poem.poet && h('p', { class: 'by' }, 'سرودهٔ ', h('a', { href: poem.poet.url }, poem.poet.name)),
+  );
+  const article = h(
+    'article',
+    { class: 'poem', lang: 'fa' },
+    stanzas.map((s, i) =>
+      h(
+        'section',
+        { class: 'stanza', 'aria-label': numbered ? `بند ${faDigits(i + 1)}` : null },
+        numbered && h('span', { class: 'stanza-title' }, `بند ${faDigits(i + 1)}`),
+        s.blocks.map(renderBlock),
       ),
     ),
+  );
+  render(
+    head,
+    article,
     h(
       'aside',
       { class: 'credit' },
       h(
         'p',
         {},
-        'متن این شعر از ',
+        'متن این شعر و خوانش‌هایش از ',
         h('a', { href: GANJOOR, rel: 'noopener' }, 'گنجور'),
         ' است. ',
         h('a', { href: original, rel: 'noopener' }, 'این شعر را در گنجور ببینید'),
-        '؛ با خوانش‌ها، حاشیه‌ها و منابع.',
+        '؛ با حاشیه‌ها و منابع.',
       ),
     ),
   );
+  const token = navToken;
+  loadRecitations(poem, { head, article, isCurrent: () => token === navToken });
 }
 
 let navToken = 0;
 
 async function route() {
   const token = ++navToken;
+  // A recitation belongs to its poem; leaving the page ends it.
+  stopPlayer();
   const path = decodeURIComponent(location.pathname).replace(/\/+$/, '') || '/';
   showState('در حال بارگذاری…');
   try {
@@ -194,6 +188,7 @@ document.addEventListener('click', (e) => {
 });
 
 window.addEventListener('popstate', route);
+document.getElementById('version').textContent = `نسخهٔ ${faDigits(VERSION)}`;
 route();
 
 if ('serviceWorker' in navigator) {
