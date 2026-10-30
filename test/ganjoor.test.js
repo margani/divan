@@ -138,3 +138,29 @@ test('the poem request asks Ganjoor for verses', async () => {
   assert.equal(q.get('verseDetails'), 'true');
   assert.equal(q.get('comments'), 'false');
 });
+
+test('responses say whether they came from the edge cache', async () => {
+  const fetchFn = stubFetch({ [`${UP}/poets`]: [] });
+  const cache = memoryCache();
+  const pending = [];
+  const ctx = { cache, waitUntil: (p) => pending.push(p), fetchFn };
+  const first = await handle(new Request('https://divan.test/api/poets'), ctx);
+  await Promise.all(pending);
+  assert.equal(first.headers.get('x-divan-cache'), 'miss');
+  const second = await handle(new Request('https://divan.test/api/poets'), ctx);
+  assert.equal(second.headers.get('x-divan-cache'), 'hit');
+});
+
+test('/api/version reports the deployed commit and is never cached', async () => {
+  const cache = memoryCache();
+  const res = await handle(new Request('https://divan.test/api/version'), {
+    cache,
+    waitUntil() {},
+    fetchFn: stubFetch({}),
+    version: 'abc1234',
+  });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { commit: 'abc1234' });
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  assert.equal(cache.store.size, 0);
+});
