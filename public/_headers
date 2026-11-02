@@ -1,4 +1,5 @@
 /*
+  Strict-Transport-Security: max-age=31536000
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Content-Security-Policy: default-src 'self'; img-src 'self' data:; media-src https://i.ganjoor.net; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; frame-src https://open.spotify.com https://www.youtube-nocookie.com; frame-ancestors 'none'
