@@ -412,3 +412,22 @@ test('sung: each poem has its title and each poet a name, for the songs page', (
   assert.equal(odd.titles['/a/b/sh2'], 'کتاب & دفتر » شعر <۲>');
   assert.equal(odd.poets['/a'], 'شاعر');
 });
+
+// A trailing slash or an unknown endpoint used to get its own cache entry
+// (#42): /api/sung/ fetched Ganjoor's 2.3 MB music index a second time.
+test('a trailing slash reads the same cache entry, unknown endpoints are not cached', async () => {
+  const fetchFn = stubFetch({ [`${UP}/poets`]: [] });
+  const cache = memoryCache();
+  const pending = [];
+  const ctx = { cache, waitUntil: (p) => pending.push(p), fetchFn };
+  await handle(new Request('https://divan.test/api/poets'), ctx);
+  await Promise.all(pending);
+  const again = await handle(new Request('https://divan.test/api/poets/'), ctx);
+  assert.equal(again.headers.get('x-divan-cache'), 'hit');
+  assert.equal(fetchFn.calls.length, 1);
+  const unknown = await handle(new Request('https://divan.test/api/zz1'), ctx);
+  await Promise.all(pending);
+  assert.equal(unknown.status, 404);
+  assert.equal(unknown.headers.get('cache-control'), 'no-store');
+  assert.deepEqual([...cache.store.keys()], [`https://divan.test/api/poets?shape=${SHAPE_VERSION}`]);
+});
