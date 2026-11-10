@@ -151,6 +151,15 @@ this code without tapping «به‌روزرسانی». After a
 deploy, run player-check against https://divan.whosane.dev too.
 Look at the screenshots, not just the exit code.
 
+## Model use
+
+This project runs on Sonnet. Do routine work (small edits, tests, git, status
+files, reading) yourself. For a heavy step (design of a new feature, hard
+debugging after one failed attempt, a security or architecture review, a large
+refactor, an audit across many files) delegate that step to a subagent with the
+Agent tool and model "opus", then use its result. Say in one line when you
+delegate and why. (Owner decision 2026-11-10.)
+
 ## Lessons
 
 - 2026-10-30: `api.ganjoor.net/api/ganjoor/poem` returns an empty `verses`
