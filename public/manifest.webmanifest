@@ -1,6 +1,9 @@
 {
   "name": "دیوان",
   "short_name": "دیوان",
+  "name_localized": {
+    "fa": { "value": "دیوان", "lang": "fa", "dir": "rtl" }
+  },
   "description": "دیوان، خوانشگری آرام و زیبا برای شعر فارسی بر پایهٔ داده‌های گنجور.",
   "lang": "fa",
   "dir": "rtl",
